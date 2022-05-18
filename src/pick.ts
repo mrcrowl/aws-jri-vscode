@@ -61,7 +61,7 @@ export async function pick<T extends Resource>(
       region: region,
       skipCache: false,
     });
-    picker.items = resources.map(resourceToQuickPickItem);
+    picker.items = resources.sort(sortByResourceName).map(resourceToQuickPickItem);
     picker.placeholder = `Found ${resources.length} ${resourceType}${
       resources.length === 1 ? "" : "s"
     }`;
@@ -78,7 +78,7 @@ export async function pick<T extends Resource>(
       if (!sameURLs(freshItemURLs, existingItemURLs)) {
         const activeItemURLs = new Set(picker.activeItems.map((item) => item.url));
         picker.keepScrollPosition = true;
-        picker.items = freshResources.map(resourceToQuickPickItem);
+        picker.items = freshResources.sort(sortByResourceName).map(resourceToQuickPickItem);
         if (activeItemURLs.size > 0) {
           picker.activeItems = picker.items.filter((item) => activeItemURLs.has(item.url));
         }
@@ -87,6 +87,10 @@ export async function pick<T extends Resource>(
 
     picker.busy = false;
   });
+}
+
+function sortByResourceName(a: Resource, b: Resource): number {
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
 function sameURLs(oldURLs: readonly string[], newURLs: readonly string[]) {

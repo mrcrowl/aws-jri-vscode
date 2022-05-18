@@ -6,6 +6,8 @@ import * as ecs from "./aws/ecs";
 import * as s3 from "./aws/s3";
 import * as lambda from "./aws/lambda";
 import * as rds from "./aws/rds";
+import * as cloudfront from "./aws/cloudfront";
+import * as cloudformation from "./aws/cloudformation";
 
 export const PROFILE = "newprod";
 
@@ -16,7 +18,9 @@ export function activate(context: ExtensionContext) {
     commands.registerCommand("jri.ecsClusters", () => showECSClusters()),
     commands.registerCommand("jri.s3Buckets", () => showS3Buckets()),
     commands.registerCommand("jri.lambdaFunctions", () => showLambdaFunctions()),
-    commands.registerCommand("jri.rdsDatabases", () => showRDSDatabases())
+    commands.registerCommand("jri.rdsDatabases", () => showRDSDatabases()),
+    commands.registerCommand("jri.cloudformationStacks", () => showCloudFormationStacks()),
+    commands.registerCommand("jri.cloudfrontDistributions", () => showCloudFrontDistributions())
   );
 }
 
@@ -46,4 +50,14 @@ async function showLambdaFunctions() {
 async function showRDSDatabases() {
   process.env.AWS_PROFILE = PROFILE;
   await pick("database", "ap-southeast-2", rds.getDatabases);
+}
+
+async function showCloudFrontDistributions() {
+  process.env.AWS_PROFILE = PROFILE;
+  await pick("distribution", "ap-southeast-2", cloudfront.getDistributions);
+}
+
+async function showCloudFormationStacks() {
+  process.env.AWS_PROFILE = PROFILE;
+  await pick("stack", "ap-southeast-2", cloudformation.getStacks);
 }
