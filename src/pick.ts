@@ -70,17 +70,48 @@ export async function pick<T extends Resource>(
     picker.placeholder = "Type to filter";
     
     if (resources.fromCache) {
-      const freshItems = await loadResources({ loginHooks: hooks, region: region, skipCache: true });
-      const activeItemURLs = new Set(picker.activeItems.map(item => item.url));
-      picker.keepScrollPosition = true;
-      picker.items = freshItems.map(resourceToQuickPickItem);
-      if (activeItemURLs.size > 0) {
-        picker.activeItems = picker.items.filter(item => activeItemURLs.has(item.url));
+      // Reload the items without cache, in case anything has changed.
+      const freshResources = await loadResources({ loginHooks: hooks, region: region, skipCache: true });
+      const freshItemURLs = freshResources.map(item => item.url);
+      const existingItemURLs = picker.items.map(item => item.url);
+      if (!sameURLs(freshItemURLs, existingItemURLs)) {
+        const activeItemURLs = new Set(picker.activeItems.map(item => item.url));
+        picker.keepScrollPosition = true;
+        picker.items = freshResources.map(resourceToQuickPickItem);
+        if (activeItemURLs.size > 0) {
+          picker.activeItems = picker.items.filter(item => activeItemURLs.has(item.url));
+        }
       }
     }
 
     picker.busy = false;
   });
+}
+
+function sameURLs(oldURLs: readonly string[], newURLs: readonly string[]) {
+  if (oldURLs.length !== newURLs.length) {
+    return false;
+  }
+
+  const olds = new Set(oldURLs);
+  const news = new Set(newURLs);
+
+  for (const url of olds) {
+    if (news.has(url)) {
+      news.delete(url);
+      olds.delete(url);
+    } else {
+      return false;
+    }
+  }
+
+  for (const url of news) {
+    if (!olds.has(url)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export function makeQuickPickAuthHooks(picker: QuickPick<QuickPickItem>): AuthHooks {
@@ -96,3 +127,4 @@ export function makeQuickPickAuthHooks(picker: QuickPick<QuickPickItem>): AuthHo
     },
   };
 }
+
