@@ -62,7 +62,7 @@ export async function pick<T extends Resource>(
       skipCache: false,
     });
     picker.items = resources.map(resourceToQuickPickItem);
-    picker.placeholder = `Filter ${resources.length} ${resourceType}${
+    picker.placeholder = `Found ${resources.length} ${resourceType}${
       resources.length === 1 ? "" : "s"
     }`;
 
