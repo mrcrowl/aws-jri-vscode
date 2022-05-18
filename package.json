@@ -17,6 +17,7 @@
     "onCommand:jri.cloudfrontDistributions",
     "onCommand:jri.lambdaFunctions",
     "onCommand:jri.cloudformationStacks",
+    "onCommand:jri.ec2AutoScalingGroups",
     "onCommand:jri.ec2Instances"
   ],
   "main": "./dist/extension.js",
@@ -24,35 +25,39 @@
     "commands": [
       {
         "command": "jri.route53HostedZones",
-        "title": "jri: Route 53 — Hosted Zones"
+        "title": "AWS: Route 53 Hosted Zones"
       },
       {
         "command": "jri.ecsClusters",
-        "title": "jri: ECS — Clusters"
+        "title": "AWS: ECS Clusters"
       },
       {
         "command": "jri.s3Buckets",
-        "title": "jri: S3 — Buckets"
+        "title": "AWS: S3 Buckets"
       },
       {
         "command": "jri.lambdaFunctions",
-        "title": "jri: Lambda — Functions"
+        "title": "AWS: Lambda Functions"
       },
       {
         "command": "jri.rdsDatabases",
-        "title": "jri: RDS — Databases"
+        "title": "AWS: RDS Databases"
       },
       {
         "command": "jri.cloudfrontDistributions",
-        "title": "jri: CloudFront — Distributions"
+        "title": "AWS: CloudFront Distributions"
       },
       {
         "command": "jri.cloudformationStacks",
-        "title": "jri: CloudFormation — Stacks"
+        "title": "AWS: CloudFormation Stacks"
+      },
+      {
+        "command": "jri.ec2AutoScalingGroups",
+        "title": "AWS: EC2 Auto Scaling Groups"
       },
       {
         "command": "jri.ec2Instances",
-        "title": "jri: EC2 — Instances"
+        "title": "AWS: EC2 Instances"
       }
     ]
   },
@@ -75,7 +80,10 @@
     "@aws-sdk/client-ecs": "3.92.0",
     "@aws-sdk/client-ec2": "3.92.0",
     "@aws-sdk/client-rds": "3.92.0",
-    "@aws-sdk/client-cloudformation": "3.92.0"
+    "@aws-sdk/client-cloudformation": "3.92.0",
+    "@aws-sdk/client-auto-scaling": "3.94.0",
+    "@aws-sdk/client-elastic-load-balancing": "3.94.0",
+    "@aws-sdk/client-elastic-load-balancing-v2": "3.94.0"
   },
   "devDependencies": {
     "@types/vscode": "^1.67.0",
