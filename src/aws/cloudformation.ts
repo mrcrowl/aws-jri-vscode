@@ -32,9 +32,11 @@ export async function getStacks({
 }
 
 function makeResource(region: string, stack: cf.StackSummary): Resource {
+  const inProgress = stack.StackStatus?.includes("IN_PROGRESS");
+  const icon = inProgress ? "$(sync~spin)" : "";
   return {
     name: stack.StackName ?? "Unknown",
-    description: `$(sync~spin) ${stack.StackStatus}`,
+    description: `${icon} ${stack.StackStatus}`,
     url: `https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/stackinfo?filteringStatus=active&filteringText=${stack.StackName}&viewNested=true&hideStacks=false&stackId=${stack.StackId}`,
   };
 }

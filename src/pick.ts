@@ -1,19 +1,30 @@
-import { Disposable, env, QuickPick, QuickPickItem, Uri, window } from "vscode";
-import { ErrorLike } from "./error";
+import {
+  Disposable,
+  env,
+  QuickPick,
+  QuickPickItem,
+  QuickPickItemButtonEvent,
+  QuickPickItemKind,
+  ThemeIcon,
+  Uri,
+  window,
+} from "vscode";
 import { AuthHooks } from "./aws/common/auth";
-import { Resource } from "./resource";
 import { MaybeCacheArray } from "./aws/common/cache";
-
+import { ErrorLike } from "./error";
+import { Resource } from "./resource";
 export interface ResourceQuickPickItem extends QuickPickItem {
   url: string;
 }
 
-export function resourceToQuickPickItem(item: Resource): ResourceQuickPickItem {
-  return {
-    label: item.name,
-    description: item.description,
-    url: item.url,
-  };
+const PINNED = new ThemeIcon("pinned");
+const PIN = new ThemeIcon("pin");
+const SEPARATOR: ResourceQuickPickItem = { label: "", kind: QuickPickItemKind.Separator, url: "" };
+
+export interface Pinner {
+  isPinned(url: string): boolean;
+  pin(url: string): void;
+  unpin(url: string): void;
 }
 
 export interface ResourceLoadOptions {
@@ -25,13 +36,30 @@ export interface ResourceLoadOptions {
 export async function pick<T extends Resource>(
   resourceType: string,
   region: string,
-  loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<T>>
+  loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<T>>,
+  pinner: Pinner
 ): Promise<ResourceQuickPickItem | undefined> {
   const picker = window.createQuickPick<ResourceQuickPickItem>();
   picker.busy = true;
 
+  const pinButton = { iconPath: PIN, tooltip: "Pin this ${resourceType}" };
+  const unpinButton = { iconPath: PINNED, tooltip: "Unpin" };
+
+  function resourceToQuickPickItem(item: Resource): ResourceQuickPickItem {
+    const isPinned = pinner.isPinned(item.url);
+
+    return {
+      label: item.name,
+      description: item.description,
+      url: item.url,
+      buttons: [isPinned ? unpinButton : pinButton],
+      alwaysShow: isPinned,
+    };
+  }
+
   return new Promise(async (resolve, reject) => {
     const disposables: Disposable[] = [];
+    let lastResources: Resource[] = [];
 
     async function onDidAccept() {
       dispose();
@@ -46,12 +74,69 @@ export async function pick<T extends Resource>(
       resolve(undefined);
     }
 
+    function onDidTriggerItemButtion({
+      button,
+      item,
+    }: QuickPickItemButtonEvent<ResourceQuickPickItem>) {
+      // prettier-ignore
+      switch (button) {
+        case pinButton: return pinItem(item);
+        case unpinButton: return unpinItem(item);
+      }
+    }
+
+    function pinItem(item: ResourceQuickPickItem) {
+      pinner.pin(item.url);
+      render(lastResources);
+    }
+
+    function unpinItem(item: ResourceQuickPickItem) {
+      pinner.unpin(item.url);
+      render(lastResources);
+    }
+
     function dispose() {
       disposables.forEach((d) => d.dispose());
     }
 
+    function render(resources: readonly Resource[]) {
+      const sortedResources = [...resources].sort(sortByResourceName);
+      const [pinned, unpinned] = partition(sortedResources, (r) => pinner.isPinned(r.url));
+      const groupedResources = [...pinned, ...unpinned];
+
+      if (picker.items.length > 0) {
+        const freshItemURLs = groupedResources.map((item) => item.url);
+        const existingItemURLs = picker.items.map((item) => item.url);
+        if (!sameURLsInTheSameOrder(freshItemURLs, existingItemURLs)) {
+          const activeItemURLs = new Set(picker.activeItems.map((item) => item.url));
+          picker.keepScrollPosition = true;
+          let quickPickItems = groupedResources.map(resourceToQuickPickItem);
+          picker.items = [
+            ...quickPickItems.slice(0, pinned.length),
+            SEPARATOR,
+            ...quickPickItems.slice(pinned.length),
+          ];
+          if (activeItemURLs.size > 0) {
+            picker.activeItems = picker.items.filter((item) => activeItemURLs.has(item.url));
+          }
+        } else {
+          // No update required.
+        }
+      } else {
+        let quickPickItems = groupedResources.map(resourceToQuickPickItem);
+        picker.items = [
+          ...quickPickItems.slice(0, pinned.length),
+          SEPARATOR,
+          ...quickPickItems.slice(pinned.length),
+        ];
+      }
+
+      lastResources = groupedResources;
+    }
+
     picker.onDidAccept(onDidAccept, undefined, disposables);
     picker.onDidHide(onDidHide, undefined, disposables);
+    picker.onDidTriggerItemButton(onDidTriggerItemButtion, undefined, disposables);
     picker.show();
     picker.placeholder = `Loading ${resourceType}s...`;
 
@@ -65,6 +150,7 @@ export async function pick<T extends Resource>(
     picker.placeholder = `Found ${resources.length} ${resourceType}${
       resources.length === 1 ? "" : "s"
     }`;
+    render(resources);
 
     if (resources.fromCache) {
       // Reload the items without cache, in case anything has changed.
@@ -73,45 +159,37 @@ export async function pick<T extends Resource>(
         region: region,
         skipCache: true,
       });
-      const freshItemURLs = freshResources.map((item) => item.url);
-      const existingItemURLs = picker.items.map((item) => item.url);
-      if (!sameURLs(freshItemURLs, existingItemURLs)) {
-        const activeItemURLs = new Set(picker.activeItems.map((item) => item.url));
-        picker.keepScrollPosition = true;
-        picker.items = freshResources.sort(sortByResourceName).map(resourceToQuickPickItem);
-        if (activeItemURLs.size > 0) {
-          picker.activeItems = picker.items.filter((item) => activeItemURLs.has(item.url));
-        }
-      }
+      render(freshResources);
     }
 
     picker.busy = false;
   });
 }
 
+function partition<T>(list: T[], criteria: (item: T) => boolean): [hits: T[], misses: T[]] {
+  const hits: T[] = [];
+  const misses: T[] = [];
+  for (const item of list) {
+    if (criteria(item)) {
+      hits.push(item);
+    } else {
+      misses.push(item);
+    }
+  }
+  return [hits, misses];
+}
+
 function sortByResourceName(a: Resource, b: Resource): number {
   return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
-function sameURLs(oldURLs: readonly string[], newURLs: readonly string[]) {
+function sameURLsInTheSameOrder(oldURLs: readonly string[], newURLs: readonly string[]) {
   if (oldURLs.length !== newURLs.length) {
     return false;
   }
 
-  const olds = new Set(oldURLs);
-  const news = new Set(newURLs);
-
-  for (const url of olds) {
-    if (news.has(url)) {
-      news.delete(url);
-      olds.delete(url);
-    } else {
-      return false;
-    }
-  }
-
-  for (const url of news) {
-    if (!olds.has(url)) {
+  for (let i = 0; i < oldURLs.length; i++) {
+    if (oldURLs[i] !== newURLs[i]) {
       return false;
     }
   }
