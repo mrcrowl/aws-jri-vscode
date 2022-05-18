@@ -1,26 +1,27 @@
 import * as r53 from "@aws-sdk/client-route-53";
+import { rejects } from "assert";
 import { spawn } from "child_process";
 import process = require("process");
-import * as vscode from "vscode";
+import {
+  commands,
+  Disposable,
+  env,
+  ExtensionContext,
+  ProgressLocation,
+  QuickInputButton,
+  QuickPickItem,
+  QuickPickItemKind,
+  Uri,
+  window,
+} from "vscode";
 
 const PROFILE = "newprod";
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
+export function activate(context: ExtensionContext) {
   console.log('Congratulations, your extension "aws-jri" is now active!');
-
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with registerCommand
-  // The commandId parameter must match the command field in package.json
-  let disposable = vscode.commands.registerCommand("jri.route53HostedZones", () => {
-    // The code you place here will be executed every time your command is executed
-    // Display a message box to the user
-    return showRoute53HostedZones();
-  });
-
+  let disposable = commands.registerCommand("jri.route53HostedZones", () =>
+    showRoute53HostedZones()
+  );
   context.subscriptions.push(disposable);
 }
 
@@ -29,16 +30,80 @@ export function deactivate() {}
 
 async function showRoute53HostedZones() {
   process.env.AWS_PROFILE = PROFILE;
+  const item = await pick(() => hostedZones());
+  if (!item || !item.url) return;
+  await env.openExternal(Uri.parse(item.url));
+}
+
+async function pick<T extends AWSItem>(
+  loadItems: () => Promise<T[]>
+): Promise<AWSQuickPickItem | undefined> {
+  const picker = window.createQuickPick<AWSQuickPickItem>();
+  picker.busy = true;
+
+  return new Promise(async (resolve, reject) => {
+    const disposables: Disposable[] = [];
+
+    function onDidAccept() {
+      dispose();
+      resolve(picker.selectedItems[0]);
+    }
+
+    function onDidHide() {
+      dispose();
+      resolve(undefined);
+    }
+
+    function dispose() {
+      disposables.forEach((d) => d.dispose());
+    }
+
+    picker.onDidAccept(onDidAccept, undefined, disposables);
+    picker.onDidHide(onDidHide, undefined, disposables);
+    picker.show();
+    picker.placeholder = "Loading...";
+
+    const items = await loadItems();
+    picker.items = items.map(awsItemToQuickPickItem);
+    picker.busy = false;
+    picker.placeholder = "Type to filter";
+  });
+}
+
+function awsItemToQuickPickItem(item: AWSItem): AWSQuickPickItem {
+  return {
+    label: item.name,
+    description: item.description,
+    url: item.url,
+  };
+}
+
+interface AWSQuickPickItem extends QuickPickItem {
+  url: string;
+}
+
+interface AWSItem {
+  name: string;
+  description: string;
+  url: string;
+}
+
+async function hostedZones(): Promise<AWSItem[]> {
   const route53Client = new r53.Route53Client({ region: "ap-southeast-2" });
   const response = await safeRunAwsCommand(() =>
     route53Client.send(new r53.ListHostedZonesCommand({}))
   );
-  const names = response.HostedZones?.map((hz) => makeHostedZoneQuickpick(hz)) ?? [];
-  const selectedHZItem = await vscode.window.showQuickPick(names, { canPickMany: false });
-  if (!selectedHZItem || !selectedHZItem.hostedZoneID) return;
+  return response.HostedZones?.map(makeHZItem) ?? [];
+}
 
-  const url = `https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${selectedHZItem.hostedZoneID}`;
-  await vscode.env.openExternal(vscode.Uri.parse(url));
+function makeHZItem(hz: r53.HostedZone): AWSItem {
+  const hostedZoneID = hz.Id?.replace(/^\/hostedzone\//i, "") ?? "";
+
+  return {
+    name: hz.Name ?? hostedZoneID ?? "Unknown",
+    description: hz.Name ? hostedZoneID : "",
+    url: `https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${hostedZoneID}`,
+  };
 }
 
 async function safeRunAwsCommand<T>(command: () => Promise<T>): Promise<T> {
@@ -77,18 +142,4 @@ function assertIsError(e: unknown): asserts e is { message: string } {
   }
 
   throw new Error(JSON.stringify(e));
-}
-
-interface HostedZoneQuickpickItem extends vscode.QuickPickItem {
-  hostedZoneID: string;
-}
-
-function makeHostedZoneQuickpick(hz: r53.HostedZone): HostedZoneQuickpickItem {
-  const hostedZoneID = hz.Id?.replace(/^\/hostedzone\//i, "") ?? "";
-
-  return {
-    label: hz.Name ?? hz.Id ?? "Unknown",
-    description: hostedZoneID,
-    hostedZoneID,
-  };
 }
