@@ -11,7 +11,9 @@
   ],
   "activationEvents": [
     "onCommand:jri.route53HostedZones",
-    "onCommand:jri.ecsClusters"
+    "onCommand:jri.ecsClusters",
+    "onCommand:jri.s3Buckets",
+    "onCommand:jri.lambdaFunctions"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -23,6 +25,14 @@
       {
         "command": "jri.ecsClusters",
         "title": "jri: ECS — Clusters"
+      },
+      {
+        "command": "jri.s3Buckets",
+        "title": "jri: S3 — Buckets"
+      },
+      {
+        "command": "jri.lambdaFunctions",
+        "title": "jri: Lambda — Functions"
       }
     ]
   },
@@ -40,6 +50,8 @@
   "dependencies": {
     "@aws-sdk/client-cloudfront": "3.92.0",
     "@aws-sdk/client-route-53": "3.92.0",
+    "@aws-sdk/client-s3": "3.92.0",
+    "@aws-sdk/client-lambda": "3.92.0",
     "@aws-sdk/client-ecs": "3.92.0"
   },
   "devDependencies": {

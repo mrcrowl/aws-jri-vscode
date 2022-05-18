@@ -1,8 +1,8 @@
 import { Disposable, env, QuickPick, QuickPickItem, Uri, window } from "vscode";
 import { ErrorLike } from "./error";
 import { AuthHooks } from "./aws/common/auth";
-import { Resource } from './resource';
-import { MaybeCacheArray } from './aws/common/cache';
+import { Resource } from "./resource";
+import { MaybeCacheArray } from "./aws/common/cache";
 
 export interface ResourceQuickPickItem extends QuickPickItem {
   url: string;
@@ -23,6 +23,7 @@ export interface ResourceLoadOptions {
 }
 
 export async function pick<T extends Resource>(
+  resourceType: string,
   region: string,
   loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<T>>
 ): Promise<ResourceQuickPickItem | undefined> {
@@ -52,7 +53,7 @@ export async function pick<T extends Resource>(
     picker.onDidAccept(onDidAccept, undefined, disposables);
     picker.onDidHide(onDidHide, undefined, disposables);
     picker.show();
-    picker.placeholder = "Loading...";
+    picker.placeholder = `Loading ${resourceType}s...`;
 
     const hooks = makeQuickPickAuthHooks(picker);
     const resources = await loadResources({
@@ -61,19 +62,25 @@ export async function pick<T extends Resource>(
       skipCache: false,
     });
     picker.items = resources.map(resourceToQuickPickItem);
-    picker.placeholder = "Type to filter";
-    
+    picker.placeholder = `Filter ${resources.length} ${resourceType}${
+      resources.length === 1 ? "" : "s"
+    }`;
+
     if (resources.fromCache) {
       // Reload the items without cache, in case anything has changed.
-      const freshResources = await loadResources({ loginHooks: hooks, region: region, skipCache: true });
-      const freshItemURLs = freshResources.map(item => item.url);
-      const existingItemURLs = picker.items.map(item => item.url);
+      const freshResources = await loadResources({
+        loginHooks: hooks,
+        region: region,
+        skipCache: true,
+      });
+      const freshItemURLs = freshResources.map((item) => item.url);
+      const existingItemURLs = picker.items.map((item) => item.url);
       if (!sameURLs(freshItemURLs, existingItemURLs)) {
-        const activeItemURLs = new Set(picker.activeItems.map(item => item.url));
+        const activeItemURLs = new Set(picker.activeItems.map((item) => item.url));
         picker.keepScrollPosition = true;
         picker.items = freshResources.map(resourceToQuickPickItem);
         if (activeItemURLs.size > 0) {
-          picker.activeItems = picker.items.filter(item => activeItemURLs.has(item.url));
+          picker.activeItems = picker.items.filter((item) => activeItemURLs.has(item.url));
         }
       }
     }
@@ -121,4 +128,3 @@ export function makeQuickPickAuthHooks(picker: QuickPick<QuickPickItem>): AuthHo
     },
   };
 }
-
