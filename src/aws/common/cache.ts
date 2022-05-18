@@ -1,4 +1,6 @@
-import { MaybeCacheArray, Resource } from "../pick";
+import { Resource } from "../../resource";
+
+export type MaybeCacheArray<T> = T[] & { fromCache?: boolean };
 
 export class ResourceCache {
   private cache = new Map<string, MaybeCacheArray<Resource>>();

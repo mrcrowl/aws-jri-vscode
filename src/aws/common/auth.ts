@@ -1,7 +1,7 @@
 import { spawn } from "child_process";
 import process = require("process");
-import { ErrorLike, assertIsErrorLike } from "../error";
-import { PROFILE } from '../extension';
+import { ErrorLike, assertIsErrorLike } from "../../error";
+import { PROFILE } from '../../extension';
 
 export interface AuthHooks {
   onAttempt: () => void;

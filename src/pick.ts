@@ -1,12 +1,8 @@
 import { Disposable, env, QuickPick, QuickPickItem, Uri, window } from "vscode";
 import { ErrorLike } from "./error";
-import { AuthHooks } from "./aws/auth";
-
-export interface Resource {
-  name: string;
-  description: string;
-  url: string;
-}
+import { AuthHooks } from "./aws/common/auth";
+import { Resource } from './resource';
+import { MaybeCacheArray } from './aws/common/cache';
 
 export interface ResourceQuickPickItem extends QuickPickItem {
   url: string;
@@ -25,8 +21,6 @@ export interface ResourceLoadOptions {
   loginHooks: AuthHooks;
   skipCache?: boolean;
 }
-
-export type MaybeCacheArray<T> = T[] & { fromCache?: boolean };
 
 export async function pick<T extends Resource>(
   region: string,

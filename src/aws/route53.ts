@@ -1,7 +1,8 @@
 import * as r53 from "@aws-sdk/client-route-53";
-import { Resource, ResourceLoadOptions } from "../pick";
-import { runAWSCommandMaybeAuth as runAuthenticated } from "./auth";
-import { ResourceCache } from "./cache";
+import { ResourceLoadOptions } from "../pick";
+import { Resource } from "../resource";
+import { runAWSCommandMaybeAuth as runAuthenticated } from "./common/auth";
+import { ResourceCache } from "./common/cache";
 
 const route53Cache = new ResourceCache();
 
