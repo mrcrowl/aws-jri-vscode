@@ -6,6 +6,7 @@ import * as lambda from "./aws/lambda";
 import * as rds from "./aws/rds";
 import * as route53 from "./aws/route53";
 import * as s3 from "./aws/s3";
+import * as ec2 from "./aws/ec2";
 import { pick, Pinner } from "./pick";
 import process = require("process");
 
@@ -56,6 +57,7 @@ export function activate(context: ExtensionContext) {
     commands.registerCommand("jri.lambdaFunctions", () => showLambdaFunctions(pinner)),
     commands.registerCommand("jri.rdsDatabases", () => showRDSDatabases(pinner)),
     commands.registerCommand("jri.cloudformationStacks", () => showCloudFormationStacks(pinner)),
+    commands.registerCommand("jri.ec2Instances", () => showEC2Instances(pinner)),
     commands.registerCommand("jri.cloudfrontDistributions", () =>
       showCloudFrontDistributions(pinner)
     )
@@ -98,4 +100,9 @@ async function showCloudFrontDistributions(pinner: Pinner) {
 async function showCloudFormationStacks(pinner: Pinner) {
   process.env.AWS_PROFILE = PROFILE;
   await pick("stack", "ap-southeast-2", cloudformation.getStacks, pinner);
+}
+
+async function showEC2Instances(pinner: Pinner) {
+  process.env.AWS_PROFILE = PROFILE;
+  await pick("instance", "ap-southeast-2", ec2.getHostedZones, pinner);
 }

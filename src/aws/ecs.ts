@@ -2,7 +2,7 @@ import * as ecs from "@aws-sdk/client-ecs";
 import { DescribeClustersCommand } from "@aws-sdk/client-ecs";
 import { ResourceLoadOptions } from "../pick";
 import { Resource } from "../resource";
-import { runAWSCommandMaybeAuth as runAuthenticated } from "./common/auth";
+import { ensureAuthenticated } from "./common/auth";
 import { ResourceCache } from "./common/cache";
 
 const ecsCache = new ResourceCache();
@@ -18,7 +18,7 @@ export async function getClusters({
   }
 
   const ecsClient = new ecs.ECSClient({ region });
-  const response = await runAuthenticated(
+  const response = await ensureAuthenticated(
     () => ecsClient.send(new ecs.ListClustersCommand({})),
     loginHooks
   );

@@ -2,7 +2,7 @@ import * as s3 from "@aws-sdk/client-s3";
 import { DescribeClustersCommand } from "@aws-sdk/client-ecs";
 import { ResourceLoadOptions } from "../pick";
 import { Resource } from "../resource";
-import { runAWSCommandMaybeAuth as runAuthenticated } from "./common/auth";
+import { ensureAuthenticated } from "./common/auth";
 import { ResourceCache } from "./common/cache";
 
 const ecsCache = new ResourceCache();
@@ -18,7 +18,7 @@ export async function getBuckets({
   }
 
   const s3Client = new s3.S3Client({ region });
-  const response = await runAuthenticated(
+  const response = await ensureAuthenticated(
     () => s3Client.send(new s3.ListBucketsCommand({})),
     loginHooks
   );

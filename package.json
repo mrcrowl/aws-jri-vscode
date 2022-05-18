@@ -16,7 +16,8 @@
     "onCommand:jri.rdsDatabases",
     "onCommand:jri.cloudfrontDistributions",
     "onCommand:jri.lambdaFunctions",
-    "onCommand:jri.cloudformationStacks"
+    "onCommand:jri.cloudformationStacks",
+    "onCommand:jri.ec2Instances"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -48,6 +49,10 @@
       {
         "command": "jri.cloudformationStacks",
         "title": "jri: CloudFormation — Stacks"
+      },
+      {
+        "command": "jri.ec2Instances",
+        "title": "jri: EC2 — Instances"
       }
     ]
   },
@@ -68,6 +73,7 @@
     "@aws-sdk/client-s3": "3.92.0",
     "@aws-sdk/client-lambda": "3.92.0",
     "@aws-sdk/client-ecs": "3.92.0",
+    "@aws-sdk/client-ec2": "3.92.0",
     "@aws-sdk/client-rds": "3.92.0",
     "@aws-sdk/client-cloudformation": "3.92.0"
   },

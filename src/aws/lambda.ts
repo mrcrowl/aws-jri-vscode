@@ -1,7 +1,7 @@
 import * as lambda from "@aws-sdk/client-lambda";
 import { ResourceLoadOptions } from "../pick";
 import { Resource } from "../resource";
-import { runAWSCommandMaybeAuth as runAuthenticated } from "./common/auth";
+import { ensureAuthenticated } from "./common/auth";
 import { ResourceCache } from "./common/cache";
 
 const ecsCache = new ResourceCache();
@@ -20,7 +20,7 @@ export async function getFunctions({
   const resources: Resource[] = [];
   let marker: string | undefined;
   do {
-    const response = await runAuthenticated(
+    const response = await ensureAuthenticated(
       () => lambdaClient.send(new lambda.ListFunctionsCommand({ Marker: marker })),
       loginHooks
     );

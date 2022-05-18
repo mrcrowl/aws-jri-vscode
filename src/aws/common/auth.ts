@@ -9,7 +9,7 @@ export interface AuthHooks {
   onFailure: (error: ErrorLike) => void;
 }
 
-export async function runAWSCommandMaybeAuth<T>(command: () => Promise<T>, loginHooks: AuthHooks): Promise<T> {
+export async function ensureAuthenticated<T>(command: () => Promise<T>, loginHooks: AuthHooks): Promise<T> {
   try {
     return await command();
   } catch (e) {

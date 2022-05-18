@@ -1,38 +1,25 @@
-import * as r53 from "@aws-sdk/client-route-53";
-import { ResourceLoadOptions } from "../pick";
-import { Resource } from "../resource";
-import { runAWSCommandMaybeAuth as runAuthenticated } from "./common/auth";
-import { ResourceCache } from "./common/cache";
+import * as route53 from "@aws-sdk/client-route-53";
+import { makeResourceLoader } from './common/loader';
 
-const route53Cache = new ResourceCache();
+export const getHostedZones = makeResourceLoader<route53.Route53Client, route53.HostedZone>({
+  init({ region }) {
+    return new route53.Route53Client({ region });
+  },
+  async *enumerate(client) {
+    let marker: string | undefined;
+    do {
+      const response = await client.send(new route53.ListHostedZonesCommand({ Marker: marker }));
+      yield* response.HostedZones ?? [];
+      marker = response.NextMarker;
+    } while (marker);
+  },
+  map(hz: route53.HostedZone) {
+    const hostedZoneID = hz.Id?.replace(/^\/hostedzone\//i, "") ?? "";
 
-export async function getHostedZones({
-  region,
-  loginHooks,
-  skipCache,
-}: ResourceLoadOptions): Promise<Resource[]> {
-  if (!skipCache) {
-    const cached = route53Cache.get(region, process.env.AWS_PROFILE);
-    if (cached) return cached;
-  }
-
-  const route53Client = new r53.Route53Client({ region });
-  const response = await runAuthenticated(
-    () => route53Client.send(new r53.ListHostedZonesCommand({})),
-    loginHooks
-  );
-  const resources = response.HostedZones?.map(makeHZItem) ?? [];
-
-  route53Cache.set(region, process.env.AWS_PROFILE, resources);
-  return resources;
-}
-
-function makeHZItem(hz: r53.HostedZone): Resource {
-  const hostedZoneID = hz.Id?.replace(/^\/hostedzone\//i, "") ?? "";
-
-  return {
-    name: hz.Name ?? hostedZoneID ?? "Unknown",
-    description: hz.Name ? hostedZoneID : "",
-    url: `https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${hostedZoneID}`,
-  };
-}
+    return {
+      name: hz.Name ?? hostedZoneID ?? "Unknown",
+      description: hz.Name ? hostedZoneID : "",
+      url: `https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${hostedZoneID}`,
+    };
+  },
+});

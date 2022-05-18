@@ -1,7 +1,7 @@
 import * as cf from "@aws-sdk/client-cloudfront";
 import { ResourceLoadOptions } from "../pick";
 import { Resource } from "../resource";
-import { runAWSCommandMaybeAuth as runAuthenticated } from "./common/auth";
+import { ensureAuthenticated } from "./common/auth";
 import { ResourceCache } from "./common/cache";
 
 const cache = new ResourceCache();
@@ -20,7 +20,7 @@ export async function getDistributions({
   const resources: Resource[] = [];
   let marker: string | undefined;
   do {
-    const response = await runAuthenticated(
+    const response = await ensureAuthenticated(
       () => cloudFrontClient.send(new cf.ListDistributionsCommand({ Marker: marker })),
       loginHooks
     );
