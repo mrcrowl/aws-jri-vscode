@@ -18,7 +18,8 @@
     "onCommand:jri.lambdaFunctions",
     "onCommand:jri.cloudformationStacks",
     "onCommand:jri.ec2AutoScalingGroups",
-    "onCommand:jri.ec2Instances"
+    "onCommand:jri.ec2Instances",
+    "onCommand:jri.dynamoDBTables"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -58,6 +59,10 @@
       {
         "command": "jri.ec2Instances",
         "title": "AWS: EC2 Instances"
+      },
+      {
+        "command": "jri.dynamoDBTables",
+        "title": "AWS: DynamoDB Tables"
       }
     ]
   },
@@ -82,6 +87,7 @@
     "@aws-sdk/client-rds": "3.92.0",
     "@aws-sdk/client-cloudformation": "3.92.0",
     "@aws-sdk/client-auto-scaling": "3.94.0",
+    "@aws-sdk/client-dynamodb": "3.94.0",
     "@aws-sdk/client-elastic-load-balancing": "3.94.0",
     "@aws-sdk/client-elastic-load-balancing-v2": "3.94.0"
   },

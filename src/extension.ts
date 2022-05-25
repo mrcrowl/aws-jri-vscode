@@ -7,6 +7,7 @@ import * as rds from "./aws/rds";
 import * as route53 from "./aws/route53";
 import * as s3 from "./aws/s3";
 import * as ec2 from "./aws/ec2";
+import * as dynamodb from "./aws/dynamodb";
 import * as autoscaling from "./aws/autoscaling";
 import { pick, Pinner } from "./pick";
 import process = require("process");
@@ -60,6 +61,7 @@ export function activate(context: ExtensionContext) {
     commands.registerCommand("jri.cloudformationStacks", () => showCloudFormationStacks(pinner)),
     commands.registerCommand("jri.ec2Instances", () => showEC2Instances(pinner)),
     commands.registerCommand("jri.ec2AutoScalingGroups", () => showAutoscalingGroups(pinner)),
+    commands.registerCommand("jri.dynamoDBTables", () => showDynamoDBTables(pinner)),
     commands.registerCommand("jri.cloudfrontDistributions", () =>
       showCloudFrontDistributions(pinner)
     )
@@ -112,4 +114,9 @@ async function showEC2Instances(pinner: Pinner) {
 async function showAutoscalingGroups(pinner: Pinner) {
   process.env.AWS_PROFILE = PROFILE;
   await pick("ASG", "ap-southeast-2", autoscaling.getAutoScalingGroups, pinner);
+}
+
+async function showDynamoDBTables(pinner: Pinner) {
+  process.env.AWS_PROFILE = PROFILE;
+  await pick("table", "ap-southeast-2", dynamodb.getTables, pinner);
 }
