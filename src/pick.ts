@@ -137,7 +137,7 @@ export async function pick<T extends Resource>(
     picker.onDidHide(onDidHide, undefined, disposables);
     picker.onDidTriggerItemButton(onDidTriggerItemButtion, undefined, disposables);
     picker.show();
-    picker.placeholder = `Loading ${resourceType}s...`;
+    picker.placeholder = `Loading ${resourceType}s... (${settings.profile})`;
 
     const hooks = makeQuickPickAuthHooks(picker);
     const resources = await loadResources({
