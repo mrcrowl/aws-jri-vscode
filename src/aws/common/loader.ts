@@ -1,6 +1,6 @@
 import { ResourceLoadOptions } from '../../pick';
 import { ResourceCache } from './cache';
-import { ensureAuthenticated } from "./auth";
+import { ensureAuthenticated } from './auth';
 import { Resource } from '../../resource';
 
 export interface ResourceLoader {
@@ -13,9 +13,7 @@ export interface ResourceLoaderDefinition<I, T> {
   map(item: T, region: string): Resource;
 }
 
-export function makeResourceLoader<I, T>(
-  definition: ResourceLoaderDefinition<I, T>
-): ResourceLoader {
+export function makeResourceLoader<I, T>(definition: ResourceLoaderDefinition<I, T>): ResourceLoader {
   const cache = new ResourceCache();
   return async (options: ResourceLoadOptions) => {
     const { region, skipCache } = options;
@@ -27,11 +25,15 @@ export function makeResourceLoader<I, T>(
     const resources: Resource[] = [];
 
     const init = definition.init(options);
-    await ensureAuthenticated(async () => {
-      for await (const item of definition.enumerate(init, options)) {
-        resources.push(definition.map(item, region));
-      }
-    }, options.loginHooks);
+    await ensureAuthenticated(
+      async () => {
+        for await (const item of definition.enumerate(init, options)) {
+          resources.push(definition.map(item, region));
+        }
+      },
+      options.loginHooks,
+      options.settings,
+    );
 
     cache.set(region, process.env.AWS_PROFILE, resources);
 

@@ -10,6 +10,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onCommand:jri.switchProfile",
     "onCommand:jri.route53HostedZones",
     "onCommand:jri.ecsClusters",
     "onCommand:jri.s3Buckets",
@@ -21,9 +22,13 @@
     "onCommand:jri.ec2Instances",
     "onCommand:jri.dynamoDBTables"
   ],
-  "main": "./dist/extension.js",
+  "main": "./dist/main.js",
   "contributes": {
     "commands": [
+      {
+        "command": "jri.switchProfile",
+        "title": "AWS: Switch profile..."
+      },
       {
         "command": "jri.route53HostedZones",
         "title": "AWS: Route 53 Hosted Zones"
@@ -78,33 +83,34 @@
     "test": "node ./out/test/runTest.js"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudfront": "3.92.0",
-    "@aws-sdk/client-route-53": "3.92.0",
-    "@aws-sdk/client-s3": "3.92.0",
-    "@aws-sdk/client-lambda": "3.92.0",
-    "@aws-sdk/client-ecs": "3.92.0",
-    "@aws-sdk/client-ec2": "3.92.0",
-    "@aws-sdk/client-rds": "3.92.0",
-    "@aws-sdk/client-cloudformation": "3.92.0",
-    "@aws-sdk/client-auto-scaling": "3.94.0",
-    "@aws-sdk/client-dynamodb": "3.94.0",
-    "@aws-sdk/client-elastic-load-balancing": "3.94.0",
-    "@aws-sdk/client-elastic-load-balancing-v2": "3.94.0"
+    "@aws-sdk/client-auto-scaling": "3.178.0",
+    "@aws-sdk/client-cloudformation": "3.178.0",
+    "@aws-sdk/client-cloudfront": "3.178.0",
+    "@aws-sdk/client-dynamodb": "3.178.0",
+    "@aws-sdk/client-ec2": "3.178.0",
+    "@aws-sdk/client-ecs": "3.178.0",
+    "@aws-sdk/client-elastic-load-balancing": "3.178.0",
+    "@aws-sdk/client-elastic-load-balancing-v2": "3.178.0",
+    "@aws-sdk/client-lambda": "3.178.0",
+    "@aws-sdk/client-rds": "3.178.0",
+    "@aws-sdk/client-route-53": "3.178.0",
+    "@aws-sdk/client-s3": "3.178.0",
+    "@aws-sdk/client-ssm": "3.178.0"
   },
   "devDependencies": {
-    "@types/vscode": "^1.67.0",
     "@types/glob": "^7.2.0",
     "@types/mocha": "^9.1.0",
     "@types/node": "14.x",
+    "@types/vscode": "^1.67.0",
     "@typescript-eslint/eslint-plugin": "^5.12.1",
     "@typescript-eslint/parser": "^5.12.1",
+    "@vscode/test-electron": "^2.1.2",
     "eslint": "^8.9.0",
     "glob": "^7.2.0",
     "mocha": "^9.2.1",
-    "typescript": "^4.5.5",
     "ts-loader": "^9.2.6",
+    "typescript": "^4.5.5",
     "webpack": "^5.69.1",
-    "webpack-cli": "^4.9.2",
-    "@vscode/test-electron": "^2.1.2"
+    "webpack-cli": "^4.9.2"
   }
 }

@@ -1,14 +1,15 @@
-import * as rds from "@aws-sdk/client-rds";
-import { ResourceLoadOptions } from "../pick";
-import { Resource } from "../resource";
-import { ensureAuthenticated } from "./common/auth";
-import { ResourceCache } from "./common/cache";
+import * as rds from '@aws-sdk/client-rds';
+import { ResourceLoadOptions } from '../pick';
+import { Resource } from '../resource';
+import { ensureAuthenticated } from './common/auth';
+import { ResourceCache } from './common/cache';
 
 const ecsCache = new ResourceCache();
 
 export async function getDatabases({
   region,
   loginHooks,
+  settings,
   skipCache,
 }: ResourceLoadOptions): Promise<Resource[]> {
   if (!skipCache) {
@@ -22,9 +23,10 @@ export async function getDatabases({
   do {
     const response = await ensureAuthenticated(
       () => rdsClient.send(new rds.DescribeDBInstancesCommand({ Marker: marker })),
-      loginHooks
+      loginHooks,
+      settings,
     );
-    resources.push(...(response.DBInstances?.map((db) => makeInstanceResource(region, db)) ?? []));
+    resources.push(...(response.DBInstances?.map(db => makeInstanceResource(region, db)) ?? []));
     ecsCache.set(region, process.env.AWS_PROFILE, resources);
     marker = response.Marker;
   } while (marker);
@@ -33,7 +35,7 @@ export async function getDatabases({
 
 function makeInstanceResource(region: string, db: rds.DBInstance): Resource {
   return {
-    name: db.DBInstanceIdentifier ?? "Unknown",
+    name: db.DBInstanceIdentifier ?? 'Unknown',
     description: `${db.DBInstanceStatus}, ${db.Engine} (${db.EngineVersion})`,
     url: `https://${region}.console.aws.amazon.com/rds/home?region=${region}#database:id=${db.DBInstanceIdentifier};is-cluster=false`,
   };

@@ -1,8 +1,8 @@
-import * as lambda from "@aws-sdk/client-lambda";
-import { ResourceLoadOptions } from "../pick";
-import { Resource } from "../resource";
-import { ensureAuthenticated } from "./common/auth";
-import { ResourceCache } from "./common/cache";
+import * as lambda from '@aws-sdk/client-lambda';
+import { ResourceLoadOptions } from '../pick';
+import { Resource } from '../resource';
+import { ensureAuthenticated } from './common/auth';
+import { ResourceCache } from './common/cache';
 
 const ecsCache = new ResourceCache();
 
@@ -10,6 +10,7 @@ export async function getFunctions({
   region,
   loginHooks,
   skipCache,
+  settings,
 }: ResourceLoadOptions): Promise<Resource[]> {
   if (!skipCache) {
     const cached = ecsCache.get(region, process.env.AWS_PROFILE);
@@ -22,9 +23,10 @@ export async function getFunctions({
   do {
     const response = await ensureAuthenticated(
       () => lambdaClient.send(new lambda.ListFunctionsCommand({ Marker: marker })),
-      loginHooks
+      loginHooks,
+      settings,
     );
-    resources.push(...(response.Functions?.map((fn) => makeFunctionResource(region, fn)) ?? []));
+    resources.push(...(response.Functions?.map(fn => makeFunctionResource(region, fn)) ?? []));
     ecsCache.set(region, process.env.AWS_PROFILE, resources);
     marker = response.NextMarker;
   } while (marker);
@@ -33,8 +35,8 @@ export async function getFunctions({
 
 function makeFunctionResource(region: string, fn: lambda.FunctionConfiguration): Resource {
   return {
-    name: fn.FunctionName ?? "Unknown",
-    description: fn.Runtime ?? "",
+    name: fn.FunctionName ?? 'Unknown',
+    description: fn.Runtime ?? '',
     url: `https://${region}.console.aws.amazon.com/lambda/home?region=${region}#/functions/${fn.FunctionName}?tab=code`,
   };
 }

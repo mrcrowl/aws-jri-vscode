@@ -1,8 +1,8 @@
-import * as cf from "@aws-sdk/client-cloudfront";
-import { ResourceLoadOptions } from "../pick";
-import { Resource } from "../resource";
-import { ensureAuthenticated } from "./common/auth";
-import { ResourceCache } from "./common/cache";
+import * as cf from '@aws-sdk/client-cloudfront';
+import { ResourceLoadOptions } from '../pick';
+import { Resource } from '../resource';
+import { ensureAuthenticated } from './common/auth';
+import { ResourceCache } from './common/cache';
 
 const cache = new ResourceCache();
 
@@ -10,6 +10,7 @@ export async function getDistributions({
   region,
   loginHooks,
   skipCache,
+  settings,
 }: ResourceLoadOptions): Promise<Resource[]> {
   if (!skipCache) {
     const cached = cache.get(region, process.env.AWS_PROFILE);
@@ -22,9 +23,10 @@ export async function getDistributions({
   do {
     const response = await ensureAuthenticated(
       () => cloudFrontClient.send(new cf.ListDistributionsCommand({ Marker: marker })),
-      loginHooks
+      loginHooks,
+      settings,
     );
-    resources.push(...(response.DistributionList?.Items?.map((stack) => makeResource(region, stack)) ?? []));
+    resources.push(...(response.DistributionList?.Items?.map(stack => makeResource(region, stack)) ?? []));
     cache.set(region, process.env.AWS_PROFILE, resources);
     marker = response.DistributionList?.Marker;
   } while (marker);
@@ -33,7 +35,7 @@ export async function getDistributions({
 
 function makeResource(region: string, distribution: cf.DistributionSummary): Resource {
   return {
-    name: distribution.Comment ?? "",
+    name: distribution.Comment ?? '',
     description: `${distribution.DomainName} (${distribution.Id})`,
     url: `https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=${region}#/distributions/${distribution.Id}`,
   };

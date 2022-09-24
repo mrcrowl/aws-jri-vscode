@@ -1,21 +1,25 @@
-import { spawn } from "child_process";
-import process = require("process");
-import { ErrorLike, assertIsErrorLike } from "../../error";
-import { PROFILE } from '../../extension';
+import { spawn } from 'child_process';
+import process = require('process');
+import { ErrorLike, assertIsErrorLike } from '../../error';
+import { ISettings } from '../../pick';
 
-export interface AuthHooks {
+export interface IAuthHooks {
   onAttempt: () => void;
   onSuccess: () => void;
   onFailure: (error: ErrorLike) => void;
 }
 
-export async function ensureAuthenticated<T>(command: () => Promise<T>, loginHooks: AuthHooks): Promise<T> {
+export async function ensureAuthenticated<T>(
+  command: () => Promise<T>,
+  loginHooks: IAuthHooks,
+  settings: ISettings,
+): Promise<T> {
   try {
     return await command();
   } catch (e) {
     assertIsErrorLike(e);
     if (/The SSO session associated with this profile (has expired|is invalid)/.test(e.message)) {
-      return loginSSOAndRetry(loginHooks, command);
+      return loginSSOAndRetry(loginHooks, settings, command);
     }
 
     throw e;
@@ -23,15 +27,16 @@ export async function ensureAuthenticated<T>(command: () => Promise<T>, loginHoo
 }
 
 async function loginSSOAndRetry<T>(
-  hooks: AuthHooks,
-  successAction: () => Promise<T>
+  hooks: IAuthHooks,
+  settings: ISettings,
+  successAction: () => Promise<T>,
 ): Promise<T> {
   hooks.onAttempt();
-  
+
   try {
-    await loginSSOViaShell();
+    await loginSSOViaShell(settings);
     hooks.onSuccess();
-    
+
     return successAction();
   } catch (e) {
     assertIsErrorLike(e);
@@ -41,10 +46,10 @@ async function loginSSOAndRetry<T>(
   }
 }
 
-async function loginSSOViaShell(): Promise<void> {
+async function loginSSOViaShell(settings: ISettings): Promise<void> {
   return new Promise((resolve, reject) => {
-    const loginProcess = spawn("aws", ["sso", "login", "--profile", PROFILE], { env: process.env });
-    loginProcess.on("exit", (exitCode) => {
+    const loginProcess = spawn('aws', ['sso', 'login', '--profile', settings.profile ?? ''], { env: process.env });
+    loginProcess.on('exit', exitCode => {
       if ((exitCode ?? 1) !== 0) {
         reject(`aws sso login exited with code ${exitCode}`);
       }

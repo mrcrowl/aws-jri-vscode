@@ -8,28 +8,35 @@ import {
   ThemeIcon,
   Uri,
   window,
-} from "vscode";
-import { AuthHooks } from "./aws/common/auth";
-import { MaybeCacheArray } from "./aws/common/cache";
-import { ErrorLike } from "./error";
-import { Resource } from "./resource";
+} from 'vscode';
+import { IAuthHooks } from './aws/common/auth';
+import { MaybeCacheArray } from './aws/common/cache';
+import { ErrorLike } from './error';
+import { Resource } from './resource';
 export interface ResourceQuickPickItem extends QuickPickItem {
   url: string;
 }
 
-const PINNED = new ThemeIcon("pinned");
-const PIN = new ThemeIcon("pin");
-const SEPARATOR: ResourceQuickPickItem = { label: "", kind: QuickPickItemKind.Separator, url: "" };
+const PINNED = new ThemeIcon('pinned');
+const PIN = new ThemeIcon('pin');
+const SEPARATOR: ResourceQuickPickItem = { label: '', kind: QuickPickItemKind.Separator, url: '' };
 
-export interface Pinner {
+/** Manages pinned urls. */
+export interface IPinner {
   isPinned(url: string): boolean;
   pin(url: string): void;
   unpin(url: string): void;
 }
 
+export interface ISettings {
+  readonly profile: string | undefined;
+  setProfile(profile: string): Promise<void>;
+}
+
 export interface ResourceLoadOptions {
   region: string;
-  loginHooks: AuthHooks;
+  loginHooks: IAuthHooks;
+  settings: ISettings;
   skipCache?: boolean;
 }
 
@@ -37,13 +44,16 @@ export async function pick<T extends Resource>(
   resourceType: string,
   region: string,
   loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<T>>,
-  pinner: Pinner
+  pinner: IPinner,
+  settings: ISettings,
 ): Promise<ResourceQuickPickItem | undefined> {
+  console.log(settings);
+
   const picker = window.createQuickPick<ResourceQuickPickItem>();
   picker.busy = true;
 
-  const pinButton = { iconPath: PIN, tooltip: "Pin this ${resourceType}" };
-  const unpinButton = { iconPath: PINNED, tooltip: "Unpin" };
+  const pinButton = { iconPath: PIN, tooltip: 'Pin this ${resourceType}' };
+  const unpinButton = { iconPath: PINNED, tooltip: 'Unpin' };
 
   function resourceToQuickPickItem(item: Resource): ResourceQuickPickItem {
     const isPinned = pinner.isPinned(item.url);
@@ -57,7 +67,7 @@ export async function pick<T extends Resource>(
     };
   }
 
-  return new Promise(async (resolve, reject) => {
+  return new Promise(async resolve => {
     const disposables: Disposable[] = [];
     let lastResources: Resource[] = [];
 
@@ -74,10 +84,7 @@ export async function pick<T extends Resource>(
       resolve(undefined);
     }
 
-    function onDidTriggerItemButtion({
-      button,
-      item,
-    }: QuickPickItemButtonEvent<ResourceQuickPickItem>) {
+    function onDidTriggerItemButtion({ button, item }: QuickPickItemButtonEvent<ResourceQuickPickItem>) {
       // prettier-ignore
       switch (button) {
         case pinButton: return pinItem(item);
@@ -96,39 +103,31 @@ export async function pick<T extends Resource>(
     }
 
     function dispose() {
-      disposables.forEach((d) => d.dispose());
+      disposables.forEach(d => d.dispose());
     }
 
     function render(resources: readonly Resource[]) {
       const sortedResources = [...resources].sort(sortByResourceName);
-      const [pinned, unpinned] = partition(sortedResources, (r) => pinner.isPinned(r.url));
+      const [pinned, unpinned] = partition(sortedResources, r => pinner.isPinned(r.url));
       const groupedResources = [...pinned, ...unpinned];
 
       if (picker.items.length > 0) {
-        const freshItemURLs = groupedResources.map((item) => item.url);
-        const existingItemURLs = picker.items.map((item) => item.url);
+        const freshItemURLs = groupedResources.map(item => item.url);
+        const existingItemURLs = picker.items.map(item => item.url);
         if (!sameURLsInTheSameOrder(freshItemURLs, existingItemURLs)) {
-          const activeItemURLs = new Set(picker.activeItems.map((item) => item.url));
+          const activeItemURLs = new Set(picker.activeItems.map(item => item.url));
           picker.keepScrollPosition = true;
           let quickPickItems = groupedResources.map(resourceToQuickPickItem);
-          picker.items = [
-            ...quickPickItems.slice(0, pinned.length),
-            SEPARATOR,
-            ...quickPickItems.slice(pinned.length),
-          ];
+          picker.items = [...quickPickItems.slice(0, pinned.length), SEPARATOR, ...quickPickItems.slice(pinned.length)];
           if (activeItemURLs.size > 0) {
-            picker.activeItems = picker.items.filter((item) => activeItemURLs.has(item.url));
+            picker.activeItems = picker.items.filter(item => activeItemURLs.has(item.url));
           }
         } else {
           // No update required.
         }
       } else {
         let quickPickItems = groupedResources.map(resourceToQuickPickItem);
-        picker.items = [
-          ...quickPickItems.slice(0, pinned.length),
-          SEPARATOR,
-          ...quickPickItems.slice(pinned.length),
-        ];
+        picker.items = [...quickPickItems.slice(0, pinned.length), SEPARATOR, ...quickPickItems.slice(pinned.length)];
       }
 
       lastResources = groupedResources;
@@ -145,11 +144,10 @@ export async function pick<T extends Resource>(
       loginHooks: hooks,
       region: region,
       skipCache: false,
+      settings,
     });
     picker.items = resources.sort(sortByResourceName).map(resourceToQuickPickItem);
-    picker.placeholder = `Found ${resources.length} ${resourceType}${
-      resources.length === 1 ? "" : "s"
-    }`;
+    picker.placeholder = `Found ${resources.length} ${resourceType}${resources.length === 1 ? '' : 's'}`;
     render(resources);
 
     if (resources.fromCache) {
@@ -158,6 +156,7 @@ export async function pick<T extends Resource>(
         loginHooks: hooks,
         region: region,
         skipCache: true,
+        settings,
       });
       render(freshResources);
     }
@@ -180,7 +179,7 @@ function partition<T>(list: T[], criteria: (item: T) => boolean): [hits: T[], mi
 }
 
 function sortByResourceName(a: Resource, b: Resource): number {
-  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 }
 
 function sameURLsInTheSameOrder(oldURLs: readonly string[], newURLs: readonly string[]) {
@@ -197,7 +196,7 @@ function sameURLsInTheSameOrder(oldURLs: readonly string[], newURLs: readonly st
   return true;
 }
 
-export function makeQuickPickAuthHooks(picker: QuickPick<QuickPickItem>): AuthHooks {
+export function makeQuickPickAuthHooks(picker: QuickPick<QuickPickItem>): IAuthHooks {
   return {
     onAttempt() {
       picker.ignoreFocusOut = true;
