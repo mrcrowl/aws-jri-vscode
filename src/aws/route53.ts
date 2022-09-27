@@ -1,7 +1,7 @@
 import * as route53 from '@aws-sdk/client-route-53';
 import { window } from 'vscode';
 import { assertIsErrorLike } from '../error';
-import { IPinner, ISettings, pick } from '../pick';
+import { IResourceMRU, ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
 import { makeResourceLoader } from './common/loader';
 
@@ -12,7 +12,7 @@ export async function showRoute53HostedZones(mru: IResourceMRU, settings: ISetti
         resourceType: 'hosted zone',
         region: 'ap-southeast-2',
         loadResources: getHostedZones,
-        pinner,
+        mru,
         settings,
       });
     }

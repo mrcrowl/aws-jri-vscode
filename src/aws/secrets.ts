@@ -1,12 +1,11 @@
 import * as secrets from '@aws-sdk/client-secrets-manager';
 import { window } from 'vscode';
 import { assertIsErrorLike } from '../error';
-import { IResourceMRU, ISettings, makeQuickPickAuthHooks, pick, ResourceLoadOptions } from '../pick';
+import { IResourceMRU, ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
 import { Resource } from '../resource';
 import { IValueRepository, showViewAndEditMenu } from '../view-and-edit-menu';
-import { runAWSCommandWithAuthentication, IAuthHooks } from './common/auth';
-import { ResourceCache } from './common/cache';
+import { makeResourceLoader } from './common/loader';
 
 export async function showSecrets(mru: IResourceMRU, settings: ISettings) {
   if (!(await ensureProfile(settings))) return;
@@ -15,9 +14,9 @@ export async function showSecrets(mru: IResourceMRU, settings: ISettings) {
     await pick({
       resourceType: 'secret',
       region: 'ap-southeast-2',
-      loadResources: getSecrets,
       mru,
       settings,
+      loadResources: getSecrets,
       onSelected: (secret: Resource) => {
         const readerWriter = new SecretsManagerValueRepository(secret.name, 'ap-southeast-2');
 
@@ -35,38 +34,27 @@ export async function showSecrets(mru: IResourceMRU, settings: ISettings) {
   }
 }
 
-const ecsCache = new ResourceCache();
+const getSecrets = makeResourceLoader<secrets.SecretsManagerClient, secrets.SecretListEntry>({
+  init: ({ region }) => new secrets.SecretsManagerClient({ region }),
 
-export async function getSecrets({
-  region,
-  loginHooks,
-  skipCache,
-  settings,
-}: ResourceLoadOptions): Promise<Resource[]> {
-  if (!skipCache) {
-    const cached = ecsCache.get(region, process.env.AWS_PROFILE);
-    if (cached) return cached;
-  }
+  async *enumerate(client) {
+    let nextToken: string | undefined;
+    do {
+      const response = await client.send(new secrets.ListSecretsCommand({ NextToken: nextToken }));
+      yield* response.SecretList ?? [];
+      nextToken = response.NextToken;
+    } while (nextToken);
+  },
 
-  const secretsClient = new secrets.SecretsManager({ region });
-  const response = await runAWSCommandWithAuthentication(
-    () => secretsClient.send(new secrets.ListSecretsCommand({ MaxResults: 100 })),
-    loginHooks,
-    settings,
-  );
-  const resources = response.SecretList?.map(b => makeSecretResource(region, b)) ?? [];
-  ecsCache.set(region, process.env.AWS_PROFILE, resources);
-  return resources;
-}
-
-function makeSecretResource(region: string, entry: secrets.SecretListEntry): Resource {
-  return {
-    name: entry.Name ?? 'Unknown',
-    description: entry.Description ?? '',
-    url: `https://${region}.console.aws.amazon.com/secretsmanager/secret?name=${entry?.Name}&region=${region}`,
-    arn: entry.ARN,
-  };
-}
+  map(secret: secrets.SecretListEntry, region: string) {
+    return {
+      name: secret.Name ?? 'Unknown',
+      description: secret.Description ?? '',
+      url: `https://${region}.console.aws.amazon.com/secretsmanager/secret?name=${secret?.Name}&region=${region}`,
+      arn: secret.ARN,
+    };
+  },
+});
 
 class SecretsManagerValueRepository implements IValueRepository {
   private readonly client: secrets.SecretsManagerClient;

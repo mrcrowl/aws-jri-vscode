@@ -148,7 +148,7 @@ async function showEC2Instances(mru: IResourceMRU, settings: ISettings) {
       await pick({
         resourceType: 'instance',
         region: 'ap-southeast-2',
-        loadResources: ec2.getHostedZones,
+        loadResources: ec2.getInstances,
         mru,
         settings,
       });
