@@ -60,6 +60,8 @@ type PickerParams<R extends Resource> = {
   region: string;
   settings: ISettings;
   mru: IResourceMRU;
+  filterText?: string;
+  activeItemURL?: string;
   loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<R>>;
   onSelected?: (resource: R) => any | PromiseLike<any>;
 };
@@ -68,6 +70,7 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
 
   const picker = window.createQuickPick<ResourceQuickPickItem<R>>();
   picker.busy = true;
+  picker.value = params.filterText ?? '';
 
   const clearButton = { iconPath: CLEAR, tooltip: `Remove this ${resourceType} from recent list` };
 
@@ -97,7 +100,7 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
         try {
           const { finished } = await onSelected(item.resource);
           if (finished) dispose();
-          else pick(params);
+          else pick({ ...params, activeItemURL: item.url, filterText: picker.value });
         } catch (e) {
           assertIsErrorLike(e);
           window.showErrorMessage(`Unexpected error: ${e.message}`);
@@ -116,10 +119,7 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
     }
 
     async function onDidTriggerItemButton({ button, item }: QuickPickItemButtonEvent<ResourceQuickPickItem<R>>) {
-      // prettier-ignore
-      switch (button) {
-        case clearButton: await clearItem(item);
-      }
+      if (button === clearButton) await clearItem(item);
     }
 
     async function clearItem(item: ResourceQuickPickItem<R>) {
@@ -183,6 +183,7 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
       settings,
     });
     picker.items = resources.sort(sortByResourceName).map(resourceToQuickPickItem);
+    picker.activeItems = picker.items.filter(item => item.url === params.activeItemURL);
     picker.placeholder = `Found ${resources.length} ${resourceType}${resources.length === 1 ? '' : 's'}`;
     render(resources);
 
