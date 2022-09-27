@@ -14,14 +14,15 @@ import { MaybeCacheArray } from './aws/common/cache';
 import { assertIsErrorLike, ErrorLike } from './error';
 import { Resource } from './resource';
 import { partition } from './tools/array';
-export interface ResourceQuickPickItem<T extends Resource> extends QuickPickItem {
+
+export interface ResourceQuickPickItem extends QuickPickItem {
   url: string;
-  resource: T;
+  resource: Resource;
 }
 
 const CLEAR = new ThemeIcon('search-remove');
 const DUMMY_RESOURCE = {} as Resource;
-const SEPARATOR: ResourceQuickPickItem<Resource> = {
+const SEPARATOR: ResourceQuickPickItem = {
   label: '',
   kind: QuickPickItemKind.Separator,
   url: '',
@@ -55,26 +56,26 @@ export interface ResourceLoadOptions {
   skipCache?: boolean;
 }
 
-type PickerParams<R extends Resource> = {
+type PickerParams = {
   resourceType: string;
   region: string;
   settings: ISettings;
   mru: IResourceMRU;
   filterText?: string;
   activeItemURL?: string;
-  loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<R>>;
-  onSelected?: (resource: R) => any | PromiseLike<any>;
+  loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<Resource>>;
+  onSelected?: (resource: Resource) => any | PromiseLike<any>;
 };
-export async function pick<R extends Resource>(params: PickerParams<R>): Promise<ResourceQuickPickItem<R> | undefined> {
+export async function pick(params: PickerParams): Promise<ResourceQuickPickItem | undefined> {
   const { resourceType, region, loadResources, settings, mru, onSelected } = params;
 
-  const picker = window.createQuickPick<ResourceQuickPickItem<R>>();
+  const picker = window.createQuickPick<ResourceQuickPickItem>();
   picker.busy = true;
   picker.value = params.filterText ?? '';
 
   const clearButton = { iconPath: CLEAR, tooltip: `Remove this ${resourceType} from recent list` };
 
-  function resourceToQuickPickItem(item: R): ResourceQuickPickItem<R> {
+  function makeQuickPickItem(item: Resource): ResourceQuickPickItem {
     const isRecent = mru.isRecentUrl(resourceType, item.url);
 
     return {
@@ -86,9 +87,16 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
     };
   }
 
+  function separatePickerItems(resources: Resource[], numRecent: number) {
+    const items: ResourceQuickPickItem[] = resources.map(makeQuickPickItem);
+    const itemsBefore = items.slice(0, numRecent);
+    const itemsAfter = items.slice(numRecent);
+    return [...itemsBefore, SEPARATOR, ...itemsAfter];
+  }
+
   return new Promise(async resolve => {
     const disposables: Disposable[] = [];
-    let lastResources: R[] = [];
+    let lastResources: Resource[] = [];
 
     async function onDidAccept() {
       const item = picker.selectedItems[0];
@@ -118,11 +126,11 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
       resolve(undefined);
     }
 
-    async function onDidTriggerItemButton({ button, item }: QuickPickItemButtonEvent<ResourceQuickPickItem<R>>) {
+    async function onDidTriggerItemButton({ button, item }: QuickPickItemButtonEvent<ResourceQuickPickItem>) {
       if (button === clearButton) await clearItem(item);
     }
 
-    async function clearItem(item: ResourceQuickPickItem<R>) {
+    async function clearItem(item: ResourceQuickPickItem) {
       await mru.clearRecentUrl(resourceType, item.url);
       render(lastResources);
     }
@@ -131,9 +139,9 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
       disposables.forEach(d => d.dispose());
     }
 
-    function render(resources: readonly R[]) {
+    function render(resources: readonly Resource[]) {
       const sortedResources = [...resources].sort(sortByResourceName);
-      const [recent, unrecent] = partition(sortedResources, r => mru.isRecentUrl(resourceType, r.url));
+      const [recent, rest] = partition(sortedResources, r => mru.isRecentUrl(resourceType, r.url));
 
       // Sorting function for recent URLs.
       const recentUrls = mru.getRecentlySelectedUrls(resourceType);
@@ -145,20 +153,15 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
         return indexA - indexB;
       }
 
-      const groupedResources = [...recent.sort(sortByRecentOrder), ...unrecent];
+      const resourcesWithRecentFirst = [...recent.sort(sortByRecentOrder), ...rest];
 
       if (picker.items.length > 0) {
-        const freshItemURLs = groupedResources.map(item => item.url);
+        const freshItemURLs = resourcesWithRecentFirst.map(item => item.url);
         const existingItemURLs = picker.items.map(item => item.url);
         if (!sameURLsInTheSameOrder(freshItemURLs, existingItemURLs)) {
           const activeItemURLs = new Set(picker.activeItems.map(item => item.url));
           picker.keepScrollPosition = true;
-          let quickPickItems = groupedResources.map(resourceToQuickPickItem);
-          picker.items = [
-            ...quickPickItems.slice(0, recent.length),
-            SEPARATOR as ResourceQuickPickItem<R>,
-            ...quickPickItems.slice(recent.length),
-          ];
+          picker.items = separatePickerItems(resourcesWithRecentFirst, recent.length);
           if (activeItemURLs.size > 0) {
             picker.activeItems = picker.items.filter(item => activeItemURLs.has(item.url));
           }
@@ -166,7 +169,8 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
           // No update required.
         }
       }
-      lastResources = groupedResources;
+
+      lastResources = resourcesWithRecentFirst;
     }
 
     picker.onDidAccept(onDidAccept, undefined, disposables);
@@ -182,8 +186,8 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
       skipCache: false,
       settings,
     });
-    picker.items = resources.sort(sortByResourceName).map(resourceToQuickPickItem);
-    picker.activeItems = picker.items.filter(item => item.url === params.activeItemURL);
+    picker.items = resources.sort(sortByResourceName).map(makeQuickPickItem);
+    if (params.activeItemURL) picker.activeItems = picker.items.filter(item => item.url === params.activeItemURL);
     picker.placeholder = `Found ${resources.length} ${resourceType}${resources.length === 1 ? '' : 's'}`;
     render(resources);
 
