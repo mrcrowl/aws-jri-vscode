@@ -1,6 +1,6 @@
 import { ResourceLoadOptions } from '../../pick';
 import { ResourceCache } from './cache';
-import { ensureAuthenticated } from './auth';
+import { runAWSCommandWithAuthentication } from './auth';
 import { Resource } from '../../resource';
 
 export interface ResourceLoader {
@@ -25,7 +25,7 @@ export function makeResourceLoader<I, T>(definition: ResourceLoaderDefinition<I,
     const resources: Resource[] = [];
 
     const init = definition.init(options);
-    await ensureAuthenticated(
+    await runAWSCommandWithAuthentication(
       async () => {
         for await (const item of definition.enumerate(init, options)) {
           resources.push(definition.map(item, region));

@@ -2,7 +2,7 @@ import * as s3 from '@aws-sdk/client-s3';
 import { DescribeClustersCommand } from '@aws-sdk/client-ecs';
 import { ResourceLoadOptions } from '../pick';
 import { Resource } from '../resource';
-import { ensureAuthenticated } from './common/auth';
+import { runAWSCommandWithAuthentication } from './common/auth';
 import { ResourceCache } from './common/cache';
 
 const ecsCache = new ResourceCache();
@@ -19,7 +19,11 @@ export async function getBuckets({
   }
 
   const s3Client = new s3.S3Client({ region });
-  const response = await ensureAuthenticated(() => s3Client.send(new s3.ListBucketsCommand({})), loginHooks, settings);
+  const response = await runAWSCommandWithAuthentication(
+    () => s3Client.send(new s3.ListBucketsCommand({})),
+    loginHooks,
+    settings,
+  );
   const resources = response.Buckets?.map(b => makeBucketResource(region, b)) ?? [];
   ecsCache.set(region, process.env.AWS_PROFILE, resources);
   return resources;

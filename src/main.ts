@@ -1,22 +1,21 @@
 import { commands, ExtensionContext, window } from 'vscode';
+import * as autoscaling from './aws/autoscaling';
 import * as cloudformation from './aws/cloudformation';
 import * as cloudfront from './aws/cloudfront';
+import * as dynamodb from './aws/dynamodb';
+import * as ec2 from './aws/ec2';
 import * as ecs from './aws/ecs';
 import * as lambda from './aws/lambda';
 import * as rds from './aws/rds';
-import * as route53 from './aws/route53';
+import { showRoute53HostedZones } from './aws/route53';
 import * as s3 from './aws/s3';
-import * as ec2 from './aws/ec2';
-import * as dynamodb from './aws/dynamodb';
-import * as autoscaling from './aws/autoscaling';
-import { pick, IPinner, ISettings } from './pick';
-import process = require('process');
+import * as secrets from './aws/secrets';
+import * as ssm from './aws/ssm';
+import { assertIsErrorLike } from './error';
 import { GlobalStateBackedPinner } from './GlobalStateBackedPinner';
 import { GlobalStateBackedSettings } from './GlobalStateBackedSettings';
+import { IPinner, ISettings, pick } from './pick';
 import { chooseProfile, ensureProfile } from './profile';
-import { assertIsErrorLike } from './error';
-
-const PROFILE = 'prod';
 
 export function activate(context: ExtensionContext) {
   context.globalState.update('pinner', null);
@@ -34,6 +33,8 @@ export function activate(context: ExtensionContext) {
     commands.registerCommand('jri.ec2AutoScalingGroups', () => showAutoscalingGroups(pinner, settings)),
     commands.registerCommand('jri.dynamoDBTables', () => showDynamoDBTables(pinner, settings)),
     commands.registerCommand('jri.cloudfrontDistributions', () => showCloudFrontDistributions(pinner, settings)),
+    commands.registerCommand('jri.secrets', () => secrets.showSecrets(pinner, settings)),
+    commands.registerCommand('jri.ssmParameters', () => ssm.showParameters(pinner, settings)),
   );
 }
 
@@ -44,21 +45,16 @@ async function switchProfile(settings: ISettings) {
   await chooseProfile(settings);
 }
 
-async function showRoute53HostedZones(pinner: IPinner, settings: ISettings) {
-  try {
-    if (await ensureProfile(settings)) {
-      await pick('hosted zone', 'ap-southeast-2', route53.getHostedZones, pinner, settings);
-    }
-  } catch (e) {
-    assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
-  }
-}
-
 async function showECSClusters(pinner: IPinner, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
-      await pick('cluster', 'ap-southeast-2', ecs.getClusters, pinner, settings);
+      await pick({
+        resourceType: 'cluster',
+        region: 'ap-southeast-2',
+        loadResources: ecs.getClusters,
+        pinner,
+        settings,
+      });
     }
   } catch (e) {
     assertIsErrorLike(e);
@@ -69,7 +65,7 @@ async function showECSClusters(pinner: IPinner, settings: ISettings) {
 async function showS3Buckets(pinner: IPinner, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
-      await pick('bucket', 'ap-southeast-2', s3.getBuckets, pinner, settings);
+      await pick({ resourceType: 'bucket', region: 'ap-southeast-2', loadResources: s3.getBuckets, pinner, settings });
     }
   } catch (e) {
     assertIsErrorLike(e);
@@ -80,7 +76,13 @@ async function showS3Buckets(pinner: IPinner, settings: ISettings) {
 async function showLambdaFunctions(pinner: IPinner, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
-      await pick('function', 'ap-southeast-2', lambda.getFunctions, pinner, settings);
+      await pick({
+        resourceType: 'function',
+        region: 'ap-southeast-2',
+        loadResources: lambda.getFunctions,
+        pinner,
+        settings,
+      });
     }
   } catch (e) {
     assertIsErrorLike(e);
@@ -91,7 +93,13 @@ async function showLambdaFunctions(pinner: IPinner, settings: ISettings) {
 async function showRDSDatabases(pinner: IPinner, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
-      await pick('database', 'ap-southeast-2', rds.getDatabases, pinner, settings);
+      await pick({
+        resourceType: 'database',
+        region: 'ap-southeast-2',
+        loadResources: rds.getDatabases,
+        pinner,
+        settings,
+      });
     }
   } catch (e) {
     assertIsErrorLike(e);
@@ -102,7 +110,13 @@ async function showRDSDatabases(pinner: IPinner, settings: ISettings) {
 async function showCloudFrontDistributions(pinner: IPinner, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
-      await pick('distribution', 'ap-southeast-2', cloudfront.getDistributions, pinner, settings);
+      await pick({
+        resourceType: 'distribution',
+        region: 'ap-southeast-2',
+        loadResources: cloudfront.getDistributions,
+        pinner,
+        settings,
+      });
     }
   } catch (e) {
     assertIsErrorLike(e);
@@ -113,7 +127,13 @@ async function showCloudFrontDistributions(pinner: IPinner, settings: ISettings)
 async function showCloudFormationStacks(pinner: IPinner, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
-      await pick('stack', 'ap-southeast-2', cloudformation.getStacks, pinner, settings);
+      await pick({
+        resourceType: 'stack',
+        region: 'ap-southeast-2',
+        loadResources: cloudformation.getStacks,
+        pinner,
+        settings,
+      });
     }
   } catch (e) {
     assertIsErrorLike(e);
@@ -124,7 +144,13 @@ async function showCloudFormationStacks(pinner: IPinner, settings: ISettings) {
 async function showEC2Instances(pinner: IPinner, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
-      await pick('instance', 'ap-southeast-2', ec2.getHostedZones, pinner, settings);
+      await pick({
+        resourceType: 'instance',
+        region: 'ap-southeast-2',
+        loadResources: ec2.getHostedZones,
+        pinner,
+        settings,
+      });
     }
   } catch (e) {
     assertIsErrorLike(e);
@@ -135,7 +161,13 @@ async function showEC2Instances(pinner: IPinner, settings: ISettings) {
 async function showAutoscalingGroups(pinner: IPinner, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
-      await pick('ASG', 'ap-southeast-2', autoscaling.getAutoScalingGroups, pinner, settings);
+      await pick({
+        resourceType: 'ASG',
+        region: 'ap-southeast-2',
+        loadResources: autoscaling.getAutoScalingGroups,
+        pinner,
+        settings,
+      });
     }
   } catch (e) {
     assertIsErrorLike(e);
@@ -146,7 +178,13 @@ async function showAutoscalingGroups(pinner: IPinner, settings: ISettings) {
 async function showDynamoDBTables(pinner: IPinner, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
-      await pick('table', 'ap-southeast-2', dynamodb.getTables, pinner, settings);
+      await pick({
+        resourceType: 'table',
+        region: 'ap-southeast-2',
+        loadResources: dynamodb.getTables,
+        pinner,
+        settings,
+      });
     }
   } catch (e) {
     assertIsErrorLike(e);

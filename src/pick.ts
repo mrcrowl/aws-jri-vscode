@@ -11,15 +11,22 @@ import {
 } from 'vscode';
 import { IAuthHooks } from './aws/common/auth';
 import { MaybeCacheArray } from './aws/common/cache';
-import { ErrorLike } from './error';
+import { assertIsErrorLike, ErrorLike } from './error';
 import { Resource } from './resource';
-export interface ResourceQuickPickItem extends QuickPickItem {
+export interface ResourceQuickPickItem<T extends Resource> extends QuickPickItem {
   url: string;
+  resource: T;
 }
 
 const PINNED = new ThemeIcon('pinned');
 const PIN = new ThemeIcon('pin');
-const SEPARATOR: ResourceQuickPickItem = { label: '', kind: QuickPickItemKind.Separator, url: '' };
+const DUMMY_RESOURCE = {} as Resource;
+const SEPARATOR: ResourceQuickPickItem<Resource> = {
+  label: '',
+  kind: QuickPickItemKind.Separator,
+  url: '',
+  resource: DUMMY_RESOURCE,
+};
 
 /** Manages pinned urls. */
 export interface IPinner {
@@ -40,22 +47,24 @@ export interface ResourceLoadOptions {
   skipCache?: boolean;
 }
 
-export async function pick<T extends Resource>(
-  resourceType: string,
-  region: string,
-  loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<T>>,
-  pinner: IPinner,
-  settings: ISettings,
-): Promise<ResourceQuickPickItem | undefined> {
+export async function pick<R extends Resource>(params: {
+  resourceType: string;
+  region: string;
+  loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<R>>;
+  pinner: IPinner;
+  settings: ISettings;
+  onSelected?: (resource: R) => any | PromiseLike<any>;
+}): Promise<ResourceQuickPickItem<R> | undefined> {
+  const { resourceType, region, loadResources, pinner, settings, onSelected } = params;
   console.log(settings);
 
-  const picker = window.createQuickPick<ResourceQuickPickItem>();
+  const picker = window.createQuickPick<ResourceQuickPickItem<R>>();
   picker.busy = true;
 
   const pinButton = { iconPath: PIN, tooltip: 'Pin this ${resourceType}' };
   const unpinButton = { iconPath: PINNED, tooltip: 'Unpin' };
 
-  function resourceToQuickPickItem(item: Resource): ResourceQuickPickItem {
+  function resourceToQuickPickItem(item: R): ResourceQuickPickItem<R> {
     const isPinned = pinner.isPinned(item.url);
 
     return {
@@ -63,19 +72,33 @@ export async function pick<T extends Resource>(
       description: item.description,
       url: item.url,
       buttons: [isPinned ? unpinButton : pinButton],
+      resource: item,
       alwaysShow: isPinned,
     };
   }
 
   return new Promise(async resolve => {
     const disposables: Disposable[] = [];
-    let lastResources: Resource[] = [];
+    let lastResources: R[] = [];
 
     async function onDidAccept() {
-      dispose();
       const item = picker.selectedItems[0];
       if (!item || !item.url) return;
-      await env.openExternal(Uri.parse(item.url));
+
+      if (onSelected) {
+        try {
+          const { finished } = await onSelected(item.resource);
+          if (finished) dispose();
+          else pick(params);
+        } catch (e) {
+          assertIsErrorLike(e);
+          window.showErrorMessage(`Unexpected error: ${e.message}`);
+          dispose();
+        }
+      } else {
+        await env.openExternal(Uri.parse(item.url));
+        dispose();
+      }
       resolve(item);
     }
 
@@ -84,7 +107,7 @@ export async function pick<T extends Resource>(
       resolve(undefined);
     }
 
-    function onDidTriggerItemButtion({ button, item }: QuickPickItemButtonEvent<ResourceQuickPickItem>) {
+    function onDidTriggerItemButton({ button, item }: QuickPickItemButtonEvent<ResourceQuickPickItem<R>>) {
       // prettier-ignore
       switch (button) {
         case pinButton: return pinItem(item);
@@ -92,12 +115,12 @@ export async function pick<T extends Resource>(
       }
     }
 
-    function pinItem(item: ResourceQuickPickItem) {
+    function pinItem(item: ResourceQuickPickItem<R>) {
       pinner.pin(item.url);
       render(lastResources);
     }
 
-    function unpinItem(item: ResourceQuickPickItem) {
+    function unpinItem(item: ResourceQuickPickItem<R>) {
       pinner.unpin(item.url);
       render(lastResources);
     }
@@ -106,7 +129,7 @@ export async function pick<T extends Resource>(
       disposables.forEach(d => d.dispose());
     }
 
-    function render(resources: readonly Resource[]) {
+    function render(resources: readonly R[]) {
       const sortedResources = [...resources].sort(sortByResourceName);
       const [pinned, unpinned] = partition(sortedResources, r => pinner.isPinned(r.url));
       const groupedResources = [...pinned, ...unpinned];
@@ -118,7 +141,11 @@ export async function pick<T extends Resource>(
           const activeItemURLs = new Set(picker.activeItems.map(item => item.url));
           picker.keepScrollPosition = true;
           let quickPickItems = groupedResources.map(resourceToQuickPickItem);
-          picker.items = [...quickPickItems.slice(0, pinned.length), SEPARATOR, ...quickPickItems.slice(pinned.length)];
+          picker.items = [
+            ...quickPickItems.slice(0, pinned.length),
+            SEPARATOR as ResourceQuickPickItem<R>,
+            ...quickPickItems.slice(pinned.length),
+          ];
           if (activeItemURLs.size > 0) {
             picker.activeItems = picker.items.filter(item => activeItemURLs.has(item.url));
           }
@@ -127,7 +154,11 @@ export async function pick<T extends Resource>(
         }
       } else {
         let quickPickItems = groupedResources.map(resourceToQuickPickItem);
-        picker.items = [...quickPickItems.slice(0, pinned.length), SEPARATOR, ...quickPickItems.slice(pinned.length)];
+        picker.items = [
+          ...quickPickItems.slice(0, pinned.length),
+          SEPARATOR as ResourceQuickPickItem<R>,
+          ...quickPickItems.slice(pinned.length),
+        ];
       }
 
       lastResources = groupedResources;
@@ -135,7 +166,7 @@ export async function pick<T extends Resource>(
 
     picker.onDidAccept(onDidAccept, undefined, disposables);
     picker.onDidHide(onDidHide, undefined, disposables);
-    picker.onDidTriggerItemButton(onDidTriggerItemButtion, undefined, disposables);
+    picker.onDidTriggerItemButton(onDidTriggerItemButton, undefined, disposables);
     picker.show();
     picker.placeholder = `Loading ${resourceType}s... (${settings.profile})`;
 

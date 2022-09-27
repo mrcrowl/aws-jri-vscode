@@ -20,7 +20,9 @@
     "onCommand:jri.cloudformationStacks",
     "onCommand:jri.ec2AutoScalingGroups",
     "onCommand:jri.ec2Instances",
-    "onCommand:jri.dynamoDBTables"
+    "onCommand:jri.dynamoDBTables",
+    "onCommand:jri.secrets",
+    "onCommand:jri.ssmParameters"
   ],
   "main": "./dist/main.js",
   "contributes": {
@@ -68,6 +70,14 @@
       {
         "command": "jri.dynamoDBTables",
         "title": "AWS: DynamoDB Tables"
+      },
+      {
+        "command": "jri.secrets",
+        "title": "AWS: Secrets"
+      },
+      {
+        "command": "jri.ssmParameters",
+        "title": "AWS: SSM Parameters"
       }
     ]
   },
@@ -95,7 +105,9 @@
     "@aws-sdk/client-rds": "3.178.0",
     "@aws-sdk/client-route-53": "3.178.0",
     "@aws-sdk/client-s3": "3.178.0",
-    "@aws-sdk/client-ssm": "3.178.0"
+    "@aws-sdk/client-secrets-manager": "^3.178.0",
+    "@aws-sdk/client-ssm": "3.178.0",
+    "clipboardy": "^3.0.0"
   },
   "devDependencies": {
     "@swc/core": "^1.3.3",

@@ -1,7 +1,7 @@
 import * as cf from '@aws-sdk/client-cloudformation';
 import { ResourceLoadOptions } from '../pick';
 import { Resource } from '../resource';
-import { ensureAuthenticated } from './common/auth';
+import { runAWSCommandWithAuthentication } from './common/auth';
 import { ResourceCache } from './common/cache';
 
 const cache = new ResourceCache();
@@ -16,7 +16,7 @@ export async function getStacks({ region, loginHooks, skipCache, settings }: Res
   const resources: Resource[] = [];
   let marker: string | undefined;
   do {
-    const response = await ensureAuthenticated(
+    const response = await runAWSCommandWithAuthentication(
       () => cloudformationClient.send(new cf.ListStacksCommand({ NextToken: marker })),
       loginHooks,
       settings,

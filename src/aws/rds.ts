@@ -1,7 +1,7 @@
 import * as rds from '@aws-sdk/client-rds';
 import { ResourceLoadOptions } from '../pick';
 import { Resource } from '../resource';
-import { ensureAuthenticated } from './common/auth';
+import { runAWSCommandWithAuthentication } from './common/auth';
 import { ResourceCache } from './common/cache';
 
 const ecsCache = new ResourceCache();
@@ -21,7 +21,7 @@ export async function getDatabases({
   const resources: Resource[] = [];
   let marker: string | undefined;
   do {
-    const response = await ensureAuthenticated(
+    const response = await runAWSCommandWithAuthentication(
       () => rdsClient.send(new rds.DescribeDBInstancesCommand({ Marker: marker })),
       loginHooks,
       settings,

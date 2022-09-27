@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import process = require('process');
 import { ErrorLike, assertIsErrorLike } from '../../error';
 import { ISettings } from '../../pick';
+import { IAWSResourceLister } from './IAWSResourceLister';
 
 export interface IAuthHooks {
   onAttempt: () => void;
@@ -9,7 +10,7 @@ export interface IAuthHooks {
   onFailure: (error: ErrorLike) => void;
 }
 
-export async function ensureAuthenticated<T>(
+export async function runAWSCommandWithAuthentication<T>(
   command: () => Promise<T>,
   loginHooks: IAuthHooks,
   settings: ISettings,
@@ -20,6 +21,29 @@ export async function ensureAuthenticated<T>(
     assertIsErrorLike(e);
     if (/The SSO session associated with this profile (has expired|is invalid)/.test(e.message)) {
       return loginSSOAndRetry(loginHooks, settings, command);
+    }
+
+    throw e;
+  }
+}
+export async function runAWSListerWithAuthentication<T extends {}>(
+  lister: IAWSResourceLister<T>,
+  loginHooks: IAuthHooks,
+  settings: ISettings,
+): Promise<T[]> {
+  try {
+    let results: T[] = [];
+    do {
+      const moreResults = await lister.fetchNextBatch();
+      if (moreResults) {
+        results = results.concat(moreResults);
+      }
+    } while (lister.hasMore);
+    return results;
+  } catch (e) {
+    assertIsErrorLike(e);
+    if (/The SSO session associated with this profile (has expired|is invalid)/.test(e.message)) {
+      return loginSSOAndRetry(loginHooks, settings, () => runAWSListerWithAuthentication(lister, loginHooks, settings));
     }
 
     throw e;
