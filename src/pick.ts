@@ -12,7 +12,7 @@ import {
 import { IAuthHooks } from './aws/common/auth';
 import { MaybeCacheArray } from './aws/common/cache';
 import { assertIsErrorLike, ErrorLike } from './error';
-import { Resource } from './resource';
+import { Resource, ResourceType } from './resource';
 import { partition } from './tools/array';
 
 export interface ResourceQuickPickItem extends QuickPickItem {
@@ -37,16 +37,19 @@ export interface ISettings {
 
 export interface IResourceMRU {
   /** Get recently selected URLs for `resourceType`. */
-  getRecentlySelectedUrls(resourceType: string): string[];
+  getRecentlySelectedUrls(resourceType: ResourceType): string[];
 
   /** Register a URL as having been selected for `resourceType`. */
-  notifyUrlSelected(resourceType: string, url: string): Promise<void>;
+  notifyUrlSelected(resourceType: ResourceType, url: string): Promise<void>;
 
   /** Clear a URL as having been selected for `resourceType`. */
-  clearRecentUrl(resourceType: string, url: string): Promise<void>;
+  clearRecentUrl(resourceType: ResourceType, url: string): Promise<void>;
 
   /** Is URL in recently selected set? */
-  isRecentUrl(resourceType: string, url: string): boolean;
+  isRecentUrl(resourceType: ResourceType, url: string): boolean;
+
+  /** Gets the index of the MRU URL. */
+  indexOf(resourceType: ResourceType, url: string): number;
 }
 
 export interface ResourceLoadOptions {
@@ -57,7 +60,7 @@ export interface ResourceLoadOptions {
 }
 
 type PickerParams = {
-  resourceType: string;
+  resourceType: ResourceType;
   region: string;
   settings: ISettings;
   mru: IResourceMRU;
@@ -144,11 +147,9 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
       const [recent, rest] = partition(sortedResources, r => mru.isRecentUrl(resourceType, r.url));
 
       // Sorting function for recent URLs.
-      const recentUrls = mru.getRecentlySelectedUrls(resourceType);
-      const indexByRecentURL = new Map(recentUrls.map((value, i) => [value, i]));
       function sortByRecentOrder(a: Resource, b: Resource): number {
-        const indexA = indexByRecentURL.get(a.url) ?? Infinity;
-        const indexB = indexByRecentURL.get(b.url) ?? Infinity;
+        const indexA = mru.indexOf(resourceType, a.url) ?? Infinity;
+        const indexB = mru.indexOf(resourceType, b.url) ?? Infinity;
 
         return indexA - indexB;
       }
@@ -166,7 +167,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
             picker.activeItems = picker.items.filter(item => activeItemURLs.has(item.url));
           }
         } else {
-          // No update required.
+          // No update needed.
         }
       }
 
@@ -177,7 +178,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
     picker.onDidHide(onDidHide, undefined, disposables);
     picker.onDidTriggerItemButton(onDidTriggerItemButton, undefined, disposables);
     picker.show();
-    picker.placeholder = `Loading ${resourceType}s... (${settings.profile})`;
+    picker.placeholder = `Loading ${resourceType}s... (@Found ${settings.profile})`;
 
     const hooks = makeQuickPickAuthHooks(picker);
     const resources = await loadResources({
@@ -187,8 +188,11 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
       settings,
     });
     picker.items = resources.sort(sortByResourceName).map(makeQuickPickItem);
-    if (params.activeItemURL) picker.activeItems = picker.items.filter(item => item.url === params.activeItemURL);
-    picker.placeholder = `Found ${resources.length} ${resourceType}${resources.length === 1 ? '' : 's'}`;
+    if (params.activeItemURL) {
+      picker.activeItems = picker.items.filter(item => item.url === params.activeItemURL);
+    }
+    const plural = resources.length === 1 ? '' : 's';
+    picker.placeholder = `Found ${resources.length} ${resourceType}${plural} for @${settings.profile}`;
     render(resources);
 
     if (resources.fromCache) {

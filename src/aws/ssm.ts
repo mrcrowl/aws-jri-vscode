@@ -1,13 +1,14 @@
 import * as ssm from '@aws-sdk/client-ssm';
 import { window } from 'vscode';
 import { assertIsErrorLike } from '../error';
+import { MRUFactoryFn } from '../mru';
 import { IResourceMRU, ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
 import { Resource } from '../resource';
 import { IValueRepository, showViewAndEditMenu } from '../view-and-edit-menu';
 import { makeResourceLoader } from './common/loader';
 
-export async function showParameters(mru: IResourceMRU, settings: ISettings) {
+export async function showParameters(makeMRU: MRUFactoryFn, settings: ISettings) {
   if (!(await ensureProfile(settings))) return;
 
   try {
@@ -16,7 +17,7 @@ export async function showParameters(mru: IResourceMRU, settings: ISettings) {
       region: 'ap-southeast-2',
       loadResources: getParameters,
       settings,
-      mru,
+      mru: makeMRU('parameter'),
       onSelected: (secret: Resource) => {
         const readerWriter = new ParameterStoreValueRepository(secret.name, 'ap-southeast-2');
 

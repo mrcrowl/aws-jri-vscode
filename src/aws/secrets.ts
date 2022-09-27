@@ -1,20 +1,21 @@
 import * as secrets from '@aws-sdk/client-secrets-manager';
 import { window } from 'vscode';
 import { assertIsErrorLike } from '../error';
+import { MRUFactoryFn } from '../mru';
 import { IResourceMRU, ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
 import { Resource } from '../resource';
 import { IValueRepository, showViewAndEditMenu } from '../view-and-edit-menu';
 import { makeResourceLoader } from './common/loader';
 
-export async function showSecrets(mru: IResourceMRU, settings: ISettings) {
+export async function showSecrets(makeMRU: MRUFactoryFn, settings: ISettings) {
   if (!(await ensureProfile(settings))) return;
 
   try {
     await pick({
       resourceType: 'secret',
       region: 'ap-southeast-2',
-      mru,
+      mru: makeMRU('secret'),
       settings,
       loadResources: getSecrets,
       onSelected: (secret: Resource) => {
