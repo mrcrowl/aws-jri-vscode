@@ -111,11 +111,8 @@ export async function showViewAndEditMenu({
     }
 
     async function editValue(value: string | undefined): Promise<{ finished: boolean }> {
-      const editedValue = await showInput(value);
-      if (!editedValue) return { finished: false };
-      if (editedValue === value) {
-        return { finished: false };
-      }
+      const editedValue = await showInputBoxWithJSONValidation(value, toSentenceCase(`${kind} value`));
+      if (!editedValue) return { finished: false }; // Cancelled?
 
       try {
         await window.withProgress(
@@ -151,12 +148,13 @@ export async function showViewAndEditMenu({
   });
 }
 
-function showInput(initialValue: string = '') {
+function showInputBoxWithJSONValidation(initialValue: string = '', placeholder?: string) {
   return new Promise<string | void>(resolve => {
     const disposables: Disposable[] = [];
     const input = window.createInputBox();
     input.ignoreFocusOut = true;
     input.value = initialValue;
+    input.placeholder = placeholder;
     input.show();
     input.onDidAccept(onDidAccept, undefined, disposables);
     input.onDidHide(onDidHide, undefined, disposables);
@@ -185,7 +183,8 @@ function showInput(initialValue: string = '') {
       }
 
       if (dispose()) {
-        resolve(input.value);
+        const changed = input.value !== initialValue;
+        resolve(changed ? input.value : undefined);
         input.hide();
       }
     }
