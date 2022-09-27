@@ -13,6 +13,7 @@ import { IAuthHooks } from './aws/common/auth';
 import { MaybeCacheArray } from './aws/common/cache';
 import { assertIsErrorLike, ErrorLike } from './error';
 import { Resource } from './resource';
+import { partition } from './tools/array';
 export interface ResourceQuickPickItem<T extends Resource> extends QuickPickItem {
   url: string;
   resource: T;
@@ -79,7 +80,6 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
       url: item.url,
       buttons: isRecent ? [clearButton] : [],
       resource: item,
-      alwaysShow: isRecent,
     };
   }
 
@@ -142,7 +142,7 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
         const indexA = indexByRecentURL.get(a.url) ?? Infinity;
         const indexB = indexByRecentURL.get(b.url) ?? Infinity;
 
-        return indexB - indexA;
+        return indexA - indexB;
       }
 
       const groupedResources = [...recent.sort(sortByRecentOrder), ...unrecent];
@@ -165,15 +165,7 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
         } else {
           // No update required.
         }
-      } else {
-        let quickPickItems = groupedResources.map(resourceToQuickPickItem);
-        picker.items = [
-          ...quickPickItems.slice(0, recent.length),
-          SEPARATOR as ResourceQuickPickItem<R>,
-          ...quickPickItems.slice(recent.length),
-        ];
       }
-
       lastResources = groupedResources;
     }
 
@@ -207,19 +199,6 @@ export async function pick<R extends Resource>(params: PickerParams<R>): Promise
 
     picker.busy = false;
   });
-}
-
-function partition<T>(list: T[], criteria: (item: T) => boolean): [hits: T[], misses: T[]] {
-  const hits: T[] = [];
-  const misses: T[] = [];
-  for (const item of list) {
-    if (criteria(item)) {
-      hits.push(item);
-    } else {
-      misses.push(item);
-    }
-  }
-  return [hits, misses];
 }
 
 function sortByResourceName(a: Resource, b: Resource): number {
