@@ -37,19 +37,19 @@ export interface ISettings {
 
 export interface IResourceMRU {
   /** Get recently selected URLs for `resourceType`. */
-  getRecentlySelectedUrls(resourceType: ResourceType): string[];
+  getRecentlySelectedUrls(): string[];
 
   /** Register a URL as having been selected for `resourceType`. */
-  notifyUrlSelected(resourceType: ResourceType, url: string): Promise<void>;
+  notifyUrlSelected(url: string): Promise<void>;
 
   /** Clear a URL as having been selected for `resourceType`. */
-  clearRecentUrl(resourceType: ResourceType, url: string): Promise<void>;
+  clearRecentUrl(url: string): Promise<void>;
 
   /** Is URL in recently selected set? */
-  isRecentUrl(resourceType: ResourceType, url: string): boolean;
+  isRecentUrl(url: string): boolean;
 
   /** Gets the index of the MRU URL. */
-  indexOf(resourceType: ResourceType, url: string): number;
+  indexOf(url: string): number;
 }
 
 export interface ResourceLoadOptions {
@@ -79,7 +79,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
   const clearButton = { iconPath: CLEAR, tooltip: `Remove this ${resourceType} from recent list` };
 
   function makeQuickPickItem(item: Resource): ResourceQuickPickItem {
-    const isRecent = mru.isRecentUrl(resourceType, item.url);
+    const isRecent = mru.isRecentUrl(item.url);
 
     return {
       label: item.name,
@@ -105,7 +105,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
       const item = picker.selectedItems[0];
       if (!item || !item.url) return;
 
-      mru.notifyUrlSelected(resourceType, item.url);
+      mru.notifyUrlSelected(item.url);
 
       if (onSelected) {
         try {
@@ -134,7 +134,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
     }
 
     async function clearItem(item: ResourceQuickPickItem) {
-      await mru.clearRecentUrl(resourceType, item.url);
+      await mru.clearRecentUrl(item.url);
       render(lastResources);
     }
 
@@ -144,12 +144,12 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
 
     function render(resources: readonly Resource[]) {
       const sortedResources = [...resources].sort(sortByResourceName);
-      const [recent, rest] = partition(sortedResources, r => mru.isRecentUrl(resourceType, r.url));
+      const [recent, rest] = partition(sortedResources, r => mru.isRecentUrl(r.url));
 
       // Sorting function for recent URLs.
       function sortByRecentOrder(a: Resource, b: Resource): number {
-        const indexA = mru.indexOf(resourceType, a.url) ?? Infinity;
-        const indexB = mru.indexOf(resourceType, b.url) ?? Infinity;
+        const indexA = mru.indexOf(a.url) ?? Infinity;
+        const indexB = mru.indexOf(b.url) ?? Infinity;
 
         return indexA - indexB;
       }

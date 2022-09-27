@@ -5,62 +5,54 @@ import { ResourceType } from './resource';
 export type MRUFactoryFn = (type: ResourceType) => IResourceMRU;
 
 export class GlobalStateBackedMRU implements IResourceMRU {
-  #setCache = new Set<string>();
-  #indexOfCache = new Map<string, number>();
+  #isRecentUrlCache: Set<string> | undefined;
+  #indexOfCache: Map<string, number> | undefined;
 
   constructor(private readonly context: ExtensionContext, private readonly resourceType: ResourceType) {}
 
-  get globalStateKey(): string {
+  private get globalStateKey(): string {
     return `recent_urls:${this.resourceType}`;
   }
 
   getRecentlySelectedUrls(): string[] {
     const urls = this.context.globalState.get(this.globalStateKey, []);
-    return urls;
+    console.log(JSON.stringify(urls, null, 2));
+    const result: string[] = [];
+    for (const url of urls) {
+      if (typeof url === 'string') {
+        result.push(url);
+      }
+    }
+    return result;
   }
 
   async notifyUrlSelected(url: string): Promise<void> {
-    const recentUrls = this.getRecentlySelectedUrls();
+    console.log(`notify: ${url}`);
+    await this.replace(recentUrls => {
+      const indexOfUrl = recentUrls.indexOf(url);
+      if (indexOfUrl === -1) {
+        // New URL: insert at front of list.
+        return [url, ...recentUrls];
+      }
 
-    // Where to insert?
-    const indexOfUrl = recentUrls.indexOf(url);
-    if (indexOfUrl === -1) {
-      // New URL: insert at front of list.
-      recentUrls.unshift(url);
-    } else {
       // Existing URL: move to front of list.
-      recentUrls.unshift(...recentUrls.splice(indexOfUrl, 1));
-    }
-
-    await this.context.globalState.update(this.globalStateKey, recentUrls);
-
-    this.invalidateCaches();
+      recentUrls.splice(indexOfUrl, 1);
+      return [url, ...recentUrls];
+    });
   }
 
-  private invalidateCaches() {
-    this.#setCache.delete(this.resourceType);
-    this.#indexOfCache.delete(this.resourceType);
-  }
-
-  async clearRecentUrl(url: string): Promise<void> {
-    const recentUrls = this.getRecentlySelectedUrls();
-
-    const indexOfUrl = recentUrls.indexOf(url);
-    if (indexOfUrl === -1) return;
-
-    recentUrls.splice(indexOfUrl, 1);
-
-    await this.context.globalState.update(this.globalStateKey, recentUrls);
-
-    this.invalidateCaches();
+  clearRecentUrl(urlToClear: string): Promise<void> {
+    return this.replace(urls => urls.filter(url => url !== urlToClear));
   }
 
   isRecentUrl(url: string): boolean {
-    if (!this.#setCache) {
-      this.#setCache = new Set(this.getRecentlySelectedUrls());
+    console.debug(`isRecentURL: ${url}`);
+    if (!this.#isRecentUrlCache) {
+      const recentURLs = this.getRecentlySelectedUrls();
+      this.#isRecentUrlCache = new Set(recentURLs);
     }
 
-    return this.#setCache.has(url);
+    return this.#isRecentUrlCache.has(url);
   }
 
   indexOf(url: string): number {
@@ -70,5 +62,20 @@ export class GlobalStateBackedMRU implements IResourceMRU {
     }
 
     return this.#indexOfCache.get(url) ?? -1;
+  }
+
+  private async replace(generator: (recentUrls: string[]) => string[] | undefined) {
+    const previousRecentUrls = this.getRecentlySelectedUrls();
+
+    const nextRecentUrls = generator(previousRecentUrls);
+    if (nextRecentUrls) {
+      await this.context.globalState.update(this.globalStateKey, nextRecentUrls.slice(0, 10));
+      this.invalidateCaches();
+    }
+  }
+
+  private invalidateCaches() {
+    this.#isRecentUrlCache = undefined;
+    this.#indexOfCache = undefined;
   }
 }
