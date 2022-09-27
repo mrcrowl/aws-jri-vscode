@@ -1,14 +1,14 @@
 import * as secrets from '@aws-sdk/client-secrets-manager';
 import { window } from 'vscode';
 import { assertIsErrorLike } from '../error';
-import { IPinner, ISettings, makeQuickPickAuthHooks, pick, ResourceLoadOptions } from '../pick';
+import { IResourceMRU, ISettings, makeQuickPickAuthHooks, pick, ResourceLoadOptions } from '../pick';
 import { ensureProfile } from '../profile';
 import { Resource } from '../resource';
 import { IValueRepository, showViewAndEditMenu } from '../view-and-edit-menu';
 import { runAWSCommandWithAuthentication, IAuthHooks } from './common/auth';
 import { ResourceCache } from './common/cache';
 
-export async function showSecrets(pinner: IPinner, settings: ISettings) {
+export async function showSecrets(mru: IResourceMRU, settings: ISettings) {
   if (!(await ensureProfile(settings))) return;
 
   try {
@@ -16,7 +16,7 @@ export async function showSecrets(pinner: IPinner, settings: ISettings) {
       resourceType: 'secret',
       region: 'ap-southeast-2',
       loadResources: getSecrets,
-      pinner,
+      mru,
       settings,
       onSelected: (secret: Resource) => {
         const readerWriter = new SecretsManagerValueRepository(secret.name, 'ap-southeast-2');

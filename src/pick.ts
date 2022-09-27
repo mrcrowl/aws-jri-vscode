@@ -18,8 +18,7 @@ export interface ResourceQuickPickItem<T extends Resource> extends QuickPickItem
   resource: T;
 }
 
-const PINNED = new ThemeIcon('pinned');
-const PIN = new ThemeIcon('pin');
+const CLEAR = new ThemeIcon('search-remove');
 const DUMMY_RESOURCE = {} as Resource;
 const SEPARATOR: ResourceQuickPickItem<Resource> = {
   label: '',
@@ -28,16 +27,24 @@ const SEPARATOR: ResourceQuickPickItem<Resource> = {
   resource: DUMMY_RESOURCE,
 };
 
-/** Manages pinned urls. */
-export interface IPinner {
-  isPinned(url: string): boolean;
-  pin(url: string): void;
-  unpin(url: string): void;
-}
-
 export interface ISettings {
+  /** Selected profile */
   readonly profile: string | undefined;
   setProfile(profile: string): Promise<void>;
+}
+
+export interface IResourceMRU {
+  /** Get recently selected URLs for `resourceType`. */
+  getRecentlySelectedUrls(resourceType: string): string[];
+
+  /** Register a URL as having been selected for `resourceType`. */
+  notifyUrlSelected(resourceType: string, url: string): Promise<void>;
+
+  /** Clear a URL as having been selected for `resourceType`. */
+  clearRecentUrl(resourceType: string, url: string): Promise<void>;
+
+  /** Is URL in recently selected set? */
+  isRecentUrl(resourceType: string, url: string): boolean;
 }
 
 export interface ResourceLoadOptions {
@@ -47,33 +54,32 @@ export interface ResourceLoadOptions {
   skipCache?: boolean;
 }
 
-export async function pick<R extends Resource>(params: {
+type PickerParams<R extends Resource> = {
   resourceType: string;
   region: string;
-  loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<R>>;
-  pinner: IPinner;
   settings: ISettings;
+  mru: IResourceMRU;
+  loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<R>>;
   onSelected?: (resource: R) => any | PromiseLike<any>;
-}): Promise<ResourceQuickPickItem<R> | undefined> {
-  const { resourceType, region, loadResources, pinner, settings, onSelected } = params;
-  console.log(settings);
+};
+export async function pick<R extends Resource>(params: PickerParams<R>): Promise<ResourceQuickPickItem<R> | undefined> {
+  const { resourceType, region, loadResources, settings, mru, onSelected } = params;
 
   const picker = window.createQuickPick<ResourceQuickPickItem<R>>();
   picker.busy = true;
 
-  const pinButton = { iconPath: PIN, tooltip: 'Pin this ${resourceType}' };
-  const unpinButton = { iconPath: PINNED, tooltip: 'Unpin' };
+  const clearButton = { iconPath: CLEAR, tooltip: `Remove this ${resourceType} from recent list` };
 
   function resourceToQuickPickItem(item: R): ResourceQuickPickItem<R> {
-    const isPinned = pinner.isPinned(item.url);
+    const isRecent = mru.isRecentUrl(resourceType, item.url);
 
     return {
       label: item.name,
       description: item.description,
       url: item.url,
-      buttons: [isPinned ? unpinButton : pinButton],
+      buttons: isRecent ? [clearButton] : [],
       resource: item,
-      alwaysShow: isPinned,
+      alwaysShow: isRecent,
     };
   }
 
@@ -84,6 +90,8 @@ export async function pick<R extends Resource>(params: {
     async function onDidAccept() {
       const item = picker.selectedItems[0];
       if (!item || !item.url) return;
+
+      mru.notifyUrlSelected(resourceType, item.url);
 
       if (onSelected) {
         try {
@@ -107,21 +115,15 @@ export async function pick<R extends Resource>(params: {
       resolve(undefined);
     }
 
-    function onDidTriggerItemButton({ button, item }: QuickPickItemButtonEvent<ResourceQuickPickItem<R>>) {
+    async function onDidTriggerItemButton({ button, item }: QuickPickItemButtonEvent<ResourceQuickPickItem<R>>) {
       // prettier-ignore
       switch (button) {
-        case pinButton: return pinItem(item);
-        case unpinButton: return unpinItem(item);
+        case clearButton: await clearItem(item);
       }
     }
 
-    function pinItem(item: ResourceQuickPickItem<R>) {
-      pinner.pin(item.url);
-      render(lastResources);
-    }
-
-    function unpinItem(item: ResourceQuickPickItem<R>) {
-      pinner.unpin(item.url);
+    async function clearItem(item: ResourceQuickPickItem<R>) {
+      await mru.clearRecentUrl(resourceType, item.url);
       render(lastResources);
     }
 
@@ -131,8 +133,19 @@ export async function pick<R extends Resource>(params: {
 
     function render(resources: readonly R[]) {
       const sortedResources = [...resources].sort(sortByResourceName);
-      const [pinned, unpinned] = partition(sortedResources, r => pinner.isPinned(r.url));
-      const groupedResources = [...pinned, ...unpinned];
+      const [recent, unrecent] = partition(sortedResources, r => mru.isRecentUrl(resourceType, r.url));
+
+      // Sorting function for recent URLs.
+      const recentUrls = mru.getRecentlySelectedUrls(resourceType);
+      const indexByRecentURL = new Map(recentUrls.map((value, i) => [value, i]));
+      function sortByRecentOrder(a: Resource, b: Resource): number {
+        const indexA = indexByRecentURL.get(a.url) ?? Infinity;
+        const indexB = indexByRecentURL.get(b.url) ?? Infinity;
+
+        return indexB - indexA;
+      }
+
+      const groupedResources = [...recent.sort(sortByRecentOrder), ...unrecent];
 
       if (picker.items.length > 0) {
         const freshItemURLs = groupedResources.map(item => item.url);
@@ -142,9 +155,9 @@ export async function pick<R extends Resource>(params: {
           picker.keepScrollPosition = true;
           let quickPickItems = groupedResources.map(resourceToQuickPickItem);
           picker.items = [
-            ...quickPickItems.slice(0, pinned.length),
+            ...quickPickItems.slice(0, recent.length),
             SEPARATOR as ResourceQuickPickItem<R>,
-            ...quickPickItems.slice(pinned.length),
+            ...quickPickItems.slice(recent.length),
           ];
           if (activeItemURLs.size > 0) {
             picker.activeItems = picker.items.filter(item => activeItemURLs.has(item.url));
@@ -155,9 +168,9 @@ export async function pick<R extends Resource>(params: {
       } else {
         let quickPickItems = groupedResources.map(resourceToQuickPickItem);
         picker.items = [
-          ...quickPickItems.slice(0, pinned.length),
+          ...quickPickItems.slice(0, recent.length),
           SEPARATOR as ResourceQuickPickItem<R>,
-          ...quickPickItems.slice(pinned.length),
+          ...quickPickItems.slice(recent.length),
         ];
       }
 

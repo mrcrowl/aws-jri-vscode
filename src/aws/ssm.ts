@@ -1,7 +1,7 @@
 import * as ssm from '@aws-sdk/client-ssm';
 import { window } from 'vscode';
 import { assertIsErrorLike } from '../error';
-import { IPinner, ISettings, pick, ResourceLoadOptions } from '../pick';
+import { IResourceMRU, ISettings, pick, ResourceLoadOptions } from '../pick';
 import { ensureProfile } from '../profile';
 import { Resource } from '../resource';
 import { IValueRepository, showViewAndEditMenu } from '../view-and-edit-menu';
@@ -9,7 +9,7 @@ import { runAWSListerWithAuthentication } from './common/auth';
 import { ResourceCache } from './common/cache';
 import { IAWSResourceLister } from './common/IAWSResourceLister';
 
-export async function showParameters(pinner: IPinner, settings: ISettings) {
+export async function showParameters(mru: IResourceMRU, settings: ISettings) {
   if (!(await ensureProfile(settings))) return;
 
   try {
@@ -17,8 +17,8 @@ export async function showParameters(pinner: IPinner, settings: ISettings) {
       resourceType: 'parameter',
       region: 'ap-southeast-2',
       loadResources: getParameters,
-      pinner,
       settings,
+      mru,
       onSelected: (secret: Resource) => {
         const readerWriter = new ParameterStoreValueRepository(secret.name, 'ap-southeast-2');
 

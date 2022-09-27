@@ -5,7 +5,7 @@ import { IPinner, ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
 import { makeResourceLoader } from './common/loader';
 
-export async function showRoute53HostedZones(pinner: IPinner, settings: ISettings) {
+export async function showRoute53HostedZones(mru: IResourceMRU, settings: ISettings) {
   try {
     if (await ensureProfile(settings)) {
       await pick({
