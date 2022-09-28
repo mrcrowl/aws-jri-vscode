@@ -17,7 +17,7 @@ const config = {
   plugins: [
     nodeExternals(),
     esbuild({
-      sourceMap: false,
+      sourceMap: true,
       minify: process.env.NODE_ENV === 'production',
       target: 'ES2020',
     }),
