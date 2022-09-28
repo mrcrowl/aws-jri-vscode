@@ -15,13 +15,13 @@ export interface IValueRepository {
 }
 
 type ShowSecretMenuParams = {
-  secret: Resource;
+  resource: Resource;
   settings: ISettings;
   kind: 'secret' | 'parameter';
   valueRepository: IValueRepository;
 };
 export async function showViewAndEditMenu({
-  secret,
+  resource,
   settings: _,
   kind,
   valueRepository: valueCRUD,
@@ -61,7 +61,7 @@ export async function showViewAndEditMenu({
     picker.onDidAccept(onDidAccept, undefined, disposables);
     picker.onDidHide(onDidHide, undefined, disposables);
     picker.show();
-    picker.placeholder = `${toSentenceCase(kind)}: ${secret.name}`;
+    picker.placeholder = `${toSentenceCase(kind)}: ${resource.name}`;
     render();
 
     let actualValuePromise: Promise<string | undefined>;
@@ -87,12 +87,12 @@ export async function showViewAndEditMenu({
         },
         {
           label: `$(copy) Copy name`,
-          description: secret.name,
+          description: resource.name,
           action: item => copyToClipAndNotify(item.description, 'name'),
         },
         {
           label: `$(copy) Copy ARN`,
-          description: secret.arn,
+          description: resource.arn,
           action: item => copyToClipAndNotify(item.description, 'ARN'),
         },
         {
@@ -104,6 +104,13 @@ export async function showViewAndEditMenu({
           },
         },
       ];
+
+      // Some resources, such as parameters, don't have an ARN.
+      if (!resource.arn) {
+        const copyARNIndex = items.findIndex(item => item.label.endsWith('Copy ARN'));
+        items.splice(copyARNIndex, 1);
+      }
+
       picker.items = items;
       if (activeItemLabels.size > 0) {
         picker.activeItems = picker.items.filter(item => activeItemLabels.has(item.label));
@@ -118,7 +125,7 @@ export async function showViewAndEditMenu({
         await window.withProgress(
           {
             location: ProgressLocation.Notification,
-            title: `Updating ${kind}: ${secret.name} ...`,
+            title: `Updating ${kind}: ${resource.name} ...`,
           },
           async progress => {
             progress.report({ increment: 0 });
@@ -126,7 +133,7 @@ export async function showViewAndEditMenu({
             progress.report({ increment: 100 });
           },
         );
-        await window.showInformationMessage(`Updated ${kind} for: ${secret.name}`);
+        await window.showInformationMessage(`Updated ${kind} for: ${resource.name}`);
         return { finished: true };
       } catch (e) {
         assertIsErrorLike(e);

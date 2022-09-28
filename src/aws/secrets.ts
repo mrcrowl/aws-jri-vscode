@@ -23,7 +23,7 @@ export async function showSecrets(makeMRU: MRUFactoryFn, settings: ISettings) {
 
         return showViewAndEditMenu({
           kind: 'secret',
-          secret,
+          resource: secret,
           valueRepository: readerWriter,
           settings,
         });

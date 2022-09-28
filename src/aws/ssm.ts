@@ -18,12 +18,12 @@ export async function showParameters(makeMRU: MRUFactoryFn, settings: ISettings)
       loadResources: getParameters,
       settings,
       mru: makeMRU('parameter'),
-      onSelected: (secret: Resource) => {
-        const readerWriter = new ParameterStoreValueRepository(secret.name, 'ap-southeast-2');
+      onSelected: (parameter: Resource) => {
+        const readerWriter = new ParameterStoreValueRepository(parameter.name, 'ap-southeast-2');
 
         return showViewAndEditMenu({
           kind: 'parameter',
-          secret,
+          resource: parameter,
           valueRepository: readerWriter,
           settings,
         });
