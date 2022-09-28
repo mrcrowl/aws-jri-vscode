@@ -2,7 +2,7 @@ import * as ssm from '@aws-sdk/client-ssm';
 import { window } from 'vscode';
 import { assertIsErrorLike } from '../error';
 import { MRUFactoryFn } from '../mru';
-import { IResourceMRU, ISettings, pick } from '../pick';
+import { ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
 import { Resource } from '../resource';
 import { IValueRepository, showViewAndEditMenu } from '../view-and-edit-menu';
@@ -51,7 +51,7 @@ const getParameters = makeResourceLoader<ssm.SSMClient, ssm.Parameter>({
     return {
       name: param.Name ?? 'Unknown',
       description: '',
-      url: `https://${region}.console.aws.amazon.com/systems-manager/parameters/${param.Name}/description?region=${region}&tab=Table`,
+      url: `https://${region}.console.aws.amazon.com/systems-manager/parameters${param.Name}/description?region=${region}&tab=Table`,
       arn: param.ARN,
     };
   },

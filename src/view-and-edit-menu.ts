@@ -1,9 +1,10 @@
-import { Disposable, ProgressLocation, QuickPickItem, window, env } from 'vscode';
+import { Disposable, ProgressLocation, QuickPickItem, window, env, Uri } from 'vscode';
 import { assertIsErrorLike } from './error';
 import { ISettings } from './pick';
 import { Resource } from './resource';
 import { showInputBoxWithJSONValidation } from './input-box';
 import { toSentenceCase } from './tools/case';
+import { sleep } from './tools/async';
 
 interface ActionItem extends QuickPickItem {
   readonly action: (item: ActionItem) => { finished: boolean } | PromiseLike<{ finished: boolean }>;
@@ -81,19 +82,23 @@ export async function showViewAndEditMenu({
       const displayedValue = value ?? 'Retrieving value...';
       const items: ActionItem[] = [
         {
-          label: `$(copy) Copy value`,
+          label: `$(variable) Copy value`,
           description: displayedValue,
           action: async () => copyToClipAndNotify(await actualValuePromise, 'value'),
         },
         {
-          label: `$(copy) Copy name`,
+          label: `$(symbol-text) Copy name`,
           description: resource.name,
-          action: item => copyToClipAndNotify(item.description, 'name'),
+          action: () => copyToClipAndNotify(resource.name, 'name'),
         },
         {
-          label: `$(copy) Copy ARN`,
+          label: `$(tag) Copy ARN`,
           description: resource.arn,
-          action: item => copyToClipAndNotify(item.description, 'ARN'),
+          action: () => copyToClipAndNotify(resource.arn, 'ARN'),
+        },
+        {
+          label: `$(link) Open in AWS...`,
+          action: () => showURL(resource.url),
         },
         {
           label: `$(pencil) Edit value...`,
@@ -125,15 +130,16 @@ export async function showViewAndEditMenu({
         await window.withProgress(
           {
             location: ProgressLocation.Notification,
-            title: `Updating ${kind}: ${resource.name} ...`,
+            title: `Saving ${kind}: ${resource.name}`,
           },
           async progress => {
-            progress.report({ increment: 0 });
+            progress.report({ increment: 0, message: '...' });
             await valueCRUD.updateValue(editedValue);
+            progress.report({ increment: 100, message: '✅' });
+            await sleep(1500);
             progress.report({ increment: 100 });
           },
         );
-        await window.showInformationMessage(`Updated ${kind} for: ${resource.name}`);
         return { finished: true };
       } catch (e) {
         assertIsErrorLike(e);
@@ -153,4 +159,9 @@ export async function showViewAndEditMenu({
       }
     }
   });
+
+  async function showURL(url: string): Promise<{ finished: boolean }> {
+    await env.openExternal(Uri.parse(url));
+    return { finished: true };
+  }
 }
