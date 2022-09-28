@@ -22,12 +22,10 @@ type ShowSecretMenuParams = {
 };
 export async function showViewAndEditMenu({
   secret,
-  settings,
+  settings: _,
   kind,
   valueRepository: valueCRUD,
 }: ShowSecretMenuParams): Promise<{ finished: boolean }> {
-  console.log(settings);
-
   const picker = window.createQuickPick<ActionItem>();
   picker.busy = true;
 

@@ -85,6 +85,7 @@
     "vscode:prepublish": "rollup --environment NODE_ENV:production -c rollup.config.js",
     "rollup": "rollup -c rollup.config.js",
     "watch": "rollup -c rollup.config.js --watch",
+    "typecheck": "tsc -p . --watch",
     "test-compile": "tsc -p ./",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",

@@ -16,7 +16,6 @@ export class GlobalStateBackedMRU implements IResourceMRU {
 
   getRecentlySelectedUrls(): string[] {
     const urls = this.context.globalState.get(this.globalStateKey, []);
-    console.log(JSON.stringify(urls, null, 2));
     const result: string[] = [];
     for (const url of urls) {
       if (typeof url === 'string') {
@@ -27,7 +26,6 @@ export class GlobalStateBackedMRU implements IResourceMRU {
   }
 
   async notifyUrlSelected(url: string): Promise<void> {
-    console.log(`notify: ${url}`);
     await this.replace(recentUrls => {
       const indexOfUrl = recentUrls.indexOf(url);
       if (indexOfUrl === -1) {
@@ -46,7 +44,6 @@ export class GlobalStateBackedMRU implements IResourceMRU {
   }
 
   isRecentUrl(url: string): boolean {
-    console.debug(`isRecentURL: ${url}`);
     if (!this.#isRecentUrlCache) {
       const recentURLs = this.getRecentlySelectedUrls();
       this.#isRecentUrlCache = new Set(recentURLs);

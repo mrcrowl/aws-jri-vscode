@@ -2,11 +2,22 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "rollup: watch",
+      "group": "build",
       "type": "npm",
       "script": "watch",
-      "group": "build",
-      "label": "npm: watch",
       "detail": "rollup -c rollup.config.js --watch",
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
       "problemMatcher": {
         "base": "$tsc",
         "background": {
@@ -15,6 +26,27 @@
           "endsPattern": "waiting for changes\\.\\.\\."
         }
       },
+      "isBackground": true
+    },
+    {
+      "label": "tsc: typecheck",
+      "group": "build",
+      "type": "shell",
+      "command": "tsc",
+      "args": ["--watch", "-p", "."],
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "problemMatcher": ["$tsc-watch"],
+
       "isBackground": true
     }
   ]
