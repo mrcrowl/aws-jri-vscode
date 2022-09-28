@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import process = require('process');
+import * as process from 'process';
 import { ErrorLike, assertIsErrorLike } from '../../error';
 import { ISettings } from '../../pick';
 

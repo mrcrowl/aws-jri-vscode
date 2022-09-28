@@ -8,6 +8,8 @@
     "strict": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUnusedParameters": true
-  }
+    "noUnusedParameters": true,
+    "importHelpers": true
+  },
+  "include": ["./src/**/*.ts", "./node_modules/vscode/vscode.d.ts", "./node_modules/vscode/lib/*"]
 }

@@ -1,5 +1,4 @@
-import clipboardy from 'clipboardy';
-import { Disposable, ProgressLocation, QuickPickItem, window } from 'vscode';
+import { Disposable, ProgressLocation, QuickPickItem, window, env } from 'vscode';
 import { assertIsErrorLike } from './error';
 import { ISettings } from './pick';
 import { Resource } from './resource';
@@ -140,7 +139,7 @@ export async function showViewAndEditMenu({
 
     async function copyToClipAndNotify(description: string | undefined, what: string): Promise<{ finished: boolean }> {
       if (description) {
-        clipboardy.writeSync(description);
+        await env.clipboard.writeText(description);
         window.showInformationMessage(`Copied ${what} to clipboard`);
         return { finished: true };
       } else {
