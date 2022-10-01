@@ -18,6 +18,7 @@ import { chooseProfile, ensureProfile, IProfileUI } from './profile';
 import { ResourceType } from './resource';
 import { GlobalStateBackedSettings } from './settings';
 import { IUIFactory } from './ui/factory';
+import { VSCodePickUI } from './ui/VSCodePickUI';
 import { VSCodeProfileUI } from './ui/VSCodeProfileUI';
 
 export function activate(context: ExtensionContext) {
@@ -25,6 +26,7 @@ export function activate(context: ExtensionContext) {
   const mruFactory = (type: ResourceType): IResourceMRU => new GlobalStateBackedMRU(context, type);
   const uiFactory: IUIFactory = {
     makeProfileUI: () => new VSCodeProfileUI(),
+    makePickUI: () => new VSCodePickUI(),
   };
 
   context.subscriptions.push(
@@ -56,6 +58,7 @@ async function showECSClusters(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, set
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'cluster',
         region: 'ap-southeast-2',
         loadResources: ecs.getClusters,
@@ -73,6 +76,7 @@ async function showS3Buckets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, setti
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'bucket',
         region: 'ap-southeast-2',
         loadResources: s3.getBuckets,
@@ -90,6 +94,7 @@ async function showLambdaFunctions(makeMRU: MRUFactoryFn, uiFactory: IUIFactory,
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'function',
         region: 'ap-southeast-2',
         loadResources: lambda.getFunctions,
@@ -107,6 +112,7 @@ async function showRDSDatabases(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, se
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'database',
         region: 'ap-southeast-2',
         loadResources: rds.getDatabases,
@@ -124,6 +130,7 @@ async function showCloudFrontDistributions(makeMRU: MRUFactoryFn, uiFactory: IUI
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'distribution',
         region: 'ap-southeast-2',
         loadResources: cloudfront.getDistributions,
@@ -141,6 +148,7 @@ async function showCloudFormationStacks(makeMRU: MRUFactoryFn, uiFactory: IUIFac
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'stack',
         region: 'ap-southeast-2',
         loadResources: cloudformation.getStacks,
@@ -158,6 +166,7 @@ async function showEC2Instances(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, se
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'instance',
         region: 'ap-southeast-2',
         loadResources: ec2.getInstances,
@@ -175,6 +184,7 @@ async function showAutoscalingGroups(makeMRU: MRUFactoryFn, uiFactory: IUIFactor
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'ASG',
         region: 'ap-southeast-2',
         loadResources: autoscaling.getAutoScalingGroups,
@@ -192,6 +202,7 @@ async function showDynamoDBTables(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, 
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'table',
         region: 'ap-southeast-2',
         loadResources: dynamodb.getTables,

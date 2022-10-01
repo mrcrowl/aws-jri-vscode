@@ -15,6 +15,10 @@ import { assertIsErrorLike, ErrorLike } from './error';
 import { Resource, ResourceType } from './resource';
 import { partition } from './tools/array';
 
+export interface IPickUI {
+  showErrorMessage(message: string): Promise<void>;
+}
+
 interface ResourceQuickPickItem extends QuickPickItem {
   variant: 'resource';
   url: string;
@@ -73,6 +77,7 @@ export interface ResourceLoadOptions {
 }
 
 type PickerParams = {
+  ui: IPickUI;
   resourceType: ResourceType;
   region: string;
   settings: ISettings;
@@ -83,7 +88,7 @@ type PickerParams = {
   onSelected?: (resource: Resource) => any | PromiseLike<any>;
 };
 export async function pick(params: PickerParams): Promise<ResourceQuickPickItem | undefined> {
-  const { resourceType, region, loadResources, settings, mru, onSelected } = params;
+  const { ui, resourceType, region, loadResources, settings, mru, onSelected } = params;
 
   const picker = window.createQuickPick<VariousQuickPickItem>();
   picker.busy = true;
@@ -163,7 +168,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
           else await pick({ ...params, activeItemURL: item.url, filterText: picker.value });
         } catch (e) {
           assertIsErrorLike(e);
-          await window.showErrorMessage(`Unexpected error: ${e.message}`);
+          await ui.showErrorMessage(`Unexpected error: ${e.message}`);
           dispose();
         }
       } else {

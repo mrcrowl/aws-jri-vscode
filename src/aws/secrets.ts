@@ -14,6 +14,7 @@ export async function showSecrets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, 
 
   try {
     await pick({
+      ui: uiFactory.makePickUI(),
       resourceType: 'secret',
       region: 'ap-southeast-2',
       mru: makeMRU('secret'),

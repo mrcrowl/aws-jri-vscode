@@ -14,6 +14,7 @@ export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactor
 
   try {
     await pick({
+      ui: uiFactory.makePickUI(),
       resourceType: 'parameter',
       region: 'ap-southeast-2',
       loadResources: getParameters,

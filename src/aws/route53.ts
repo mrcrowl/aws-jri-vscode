@@ -11,6 +11,7 @@ export async function showRoute53HostedZones(makeMRU: MRUFactoryFn, uiFactory: I
   try {
     if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
+        ui: uiFactory.makePickUI(),
         resourceType: 'hosted zone',
         region: 'ap-southeast-2',
         loadResources: getHostedZones,
