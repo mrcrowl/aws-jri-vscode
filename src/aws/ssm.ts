@@ -5,7 +5,7 @@ import { MRUFactoryFn } from '../mru';
 import { ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
 import { Resource } from '../resource';
-import { IUIFactory } from '../ui/factory';
+import { IUIFactory } from '../ui/interfaces';
 import { IValueRepository, showViewAndEditMenu } from '../view-and-edit-menu';
 import { makeResourceLoader } from './common/loader';
 

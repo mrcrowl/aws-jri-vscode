@@ -17,7 +17,7 @@ import { IResourceMRU, ISettings, pick } from './pick';
 import { chooseProfile, ensureProfile, IProfileUI } from './profile';
 import { ResourceType } from './resource';
 import { GlobalStateBackedSettings } from './settings';
-import { IUIFactory } from './ui/factory';
+import { IUIFactory } from './ui/interfaces';
 import { VSCodePickUI } from './ui/VSCodePickUI';
 import { VSCodeProfileUI } from './ui/VSCodeProfileUI';
 

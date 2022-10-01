@@ -4,7 +4,7 @@ import { assertIsErrorLike } from '../error';
 import { MRUFactoryFn } from '../mru';
 import { ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
-import { IUIFactory } from '../ui/factory';
+import { IUIFactory } from '../ui/interfaces';
 import { makeResourceLoader } from './common/loader';
 
 export async function showRoute53HostedZones(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
