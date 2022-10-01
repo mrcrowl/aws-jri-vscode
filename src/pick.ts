@@ -7,7 +7,6 @@ import {
   QuickPickItemKind,
   ThemeIcon,
   Uri,
-  window,
 } from 'vscode';
 import { IAuthHooks } from './aws/common/auth';
 import { MaybeCacheArray } from './aws/common/cache';
@@ -17,6 +16,7 @@ import { partition } from './tools/array';
 
 export interface IPickUI {
   showErrorMessage(message: string): Promise<void>;
+  createQuickPick<T extends QuickPickItem>(): QuickPick<T>;
 }
 
 interface ResourceQuickPickItem extends QuickPickItem {
@@ -90,7 +90,7 @@ type PickerParams = {
 export async function pick(params: PickerParams): Promise<ResourceQuickPickItem | undefined> {
   const { ui, resourceType, region, loadResources, settings, mru, onSelected } = params;
 
-  const picker = window.createQuickPick<VariousQuickPickItem>();
+  const picker = ui.createQuickPick<VariousQuickPickItem>();
   picker.busy = true;
   picker.value = params.filterText ?? '';
 
