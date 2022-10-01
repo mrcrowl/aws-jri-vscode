@@ -10,5 +10,9 @@
   },
   // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
   "typescript.tsc.autoDetect": "off",
-  "task.allowAutomaticTasks": "on"
+  "task.allowAutomaticTasks": "on",
+  "goToTest.testFolder": ".",
+  "testing.automaticallyOpenPeekView": "never",
+  "terminal.integrated.persistentSessionReviveProcess": "never",
+  "terminal.integrated.enablePersistentSessions": false
 }

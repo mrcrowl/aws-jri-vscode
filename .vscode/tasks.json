@@ -12,18 +12,19 @@
       },
       "presentation": {
         "echo": true,
-        "reveal": "silent",
+        "reveal": "never",
         "focus": false,
         "panel": "dedicated",
         "showReuseMessage": false,
-        "clear": false
+        "clear": false,
+        "revealProblems": "never"
       },
       "problemMatcher": {
         "base": "$tsc",
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "rollup\\s",
-          "endsPattern": "waiting for changes\\.\\.\\."
+          "beginsPattern": "rollup ",
+          "endsPattern": "waiting for changes..."
         }
       },
       "isBackground": true
@@ -39,14 +40,14 @@
       },
       "presentation": {
         "echo": true,
-        "reveal": "silent",
+        "reveal": "never",
         "focus": false,
         "panel": "dedicated",
         "showReuseMessage": false,
-        "clear": false
+        "clear": false,
+        "revealProblems": "never"
       },
       "problemMatcher": ["$tsc-watch"],
-
       "isBackground": true
     }
   ]
