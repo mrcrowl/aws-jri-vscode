@@ -1,7 +1,7 @@
 import { ExtensionContext } from 'vscode';
-import { IStorage } from './interfaces';
+import { IKeyValueStorage } from './interfaces';
 
-export class VSCodeContextStorage implements IStorage {
+export class VSCodeContextStorage implements IKeyValueStorage {
   constructor(private readonly context: ExtensionContext) {}
 
   get<T>(key: string, defaultValue: T): T {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { GlobalStateBackedMRU } from './mru';
+import { MRU } from './mru';
 import { IResourceMRU } from './pick';
-import { IStorage } from './ui/interfaces';
+import { IKeyValueStorage } from './ui/interfaces';
 
 const RECENT_URLS_KEY = 'recent_urls:bucket';
 const AMAZON_URL = 'https://amazon.com';
@@ -14,7 +14,7 @@ const EXAMPLE_URLS: readonly string[] = [
   GOOGLE_URL,
 ];
 
-class InMemoryStorage implements IStorage {
+class InMemoryStorage implements IKeyValueStorage {
   private readonly storedValues = new Map<string, unknown>();
 
   clear() {
@@ -32,12 +32,12 @@ class InMemoryStorage implements IStorage {
 
 describe('GlobalStateBackedMRU', () => {
   let mru: IResourceMRU;
-  let storage: IStorage;
+  let storage: IKeyValueStorage;
 
   beforeEach(async () => {
     storage = new InMemoryStorage();
 
-    mru = new GlobalStateBackedMRU(storage, 'bucket');
+    mru = new MRU(storage, 'bucket');
   });
 
   describe('getRecentlySelectedUrls', () => {

@@ -12,18 +12,21 @@ import * as s3 from './aws/s3';
 import * as secrets from './aws/secrets';
 import * as ssm from './aws/ssm';
 import { assertIsErrorLike } from './error';
-import { GlobalStateBackedMRU, MRUFactoryFn } from './mru';
+import { MRU, MRUFactoryFn } from './mru';
 import { IResourceMRU, ISettings, pick } from './pick';
 import { chooseProfile, ensureProfile, IProfileUI } from './profile';
 import { ResourceType } from './resource';
-import { GlobalStateBackedSettings } from './settings';
-import { IUIFactory } from './ui/interfaces';
+import { StoredSettings } from './settings';
+import { IKeyValueStorage, IUIFactory } from './ui/interfaces';
+import { NodeFileSystem } from './ui/NodeFileSystem';
+import { VSCodeContextStorage } from './ui/VSCodeExtensionContext';
 import { VSCodePickUI } from './ui/VSCodePickUI';
 import { VSCodeProfileUI } from './ui/VSCodeProfileUI';
 
 export function activate(context: ExtensionContext) {
-  const settings: ISettings = new GlobalStateBackedSettings(context);
-  const mruFactory = (type: ResourceType): IResourceMRU => new GlobalStateBackedMRU(context, type);
+  const storage: IKeyValueStorage = new VSCodeContextStorage(context);
+  const settings: ISettings = new StoredSettings(storage, new NodeFileSystem());
+  const mruFactory = (type: ResourceType): IResourceMRU => new MRU(storage, type);
   const uiFactory: IUIFactory = {
     makeProfileUI: () => new VSCodeProfileUI(),
     makePickUI: () => new VSCodePickUI(),
@@ -48,6 +51,8 @@ export function activate(context: ExtensionContext) {
     commands.registerCommand('jri.secrets', () => secrets.showSecrets(mruFactory, uiFactory, settings)),
     commands.registerCommand('jri.ssmParameters', () => ssm.showParameters(mruFactory, uiFactory, settings)),
   );
+
+  context.subscriptions.push(settings);
 }
 
 async function switchProfile(profileUI: IProfileUI, settings: ISettings) {

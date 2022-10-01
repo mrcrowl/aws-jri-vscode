@@ -1,14 +1,14 @@
 import { IResourceMRU } from './pick';
 import { ResourceType } from './resource';
-import { IStorage } from './ui/interfaces';
+import { IKeyValueStorage } from './ui/interfaces';
 
 export type MRUFactoryFn = (type: ResourceType) => IResourceMRU;
 
-export class GlobalStateBackedMRU implements IResourceMRU {
+export class MRU implements IResourceMRU {
   #isRecentUrlCache: Set<string> | undefined;
   #indexOfCache: Map<string, number> | undefined;
 
-  constructor(private readonly storage: IStorage, private readonly resourceType: ResourceType) {}
+  constructor(private readonly storage: IKeyValueStorage, private readonly resourceType: ResourceType) {}
 
   private get globalStateKey(): string {
     return `recent_urls:${this.resourceType}`;

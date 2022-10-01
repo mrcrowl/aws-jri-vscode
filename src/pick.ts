@@ -50,6 +50,7 @@ export interface ISettings {
   readonly configFilepath: string;
   enumerateProfileNames(): string[] | undefined;
   isProfileName(name: string): boolean;
+  dispose(): void;
 }
 
 export interface IResourceMRU {

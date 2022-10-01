@@ -12,7 +12,7 @@
   "typescript.tsc.autoDetect": "off",
   "task.allowAutomaticTasks": "on",
   "goToTest.testFolder": ".",
-  "testing.automaticallyOpenPeekView": "never",
   "terminal.integrated.persistentSessionReviveProcess": "never",
-  "terminal.integrated.enablePersistentSessions": false
+  "terminal.integrated.enablePersistentSessions": false,
+  "testing.automaticallyOpenPeekView": "never"
 }

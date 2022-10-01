@@ -1,22 +1,33 @@
-import { ExtensionContext } from 'vscode';
-import { ISettings } from './pick';
-import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { Disposable, FileSystemWatcher } from 'vscode';
+import { ISettings } from './pick';
+import { IFileSystem, IKeyValueStorage } from './ui/interfaces';
 
-export class GlobalStateBackedSettings implements ISettings {
-  #cachedProfileNames = new Set<string>();
+export const PROFILE_KEY = 'profile';
 
-  constructor(private readonly context: ExtensionContext) {
-    this.#cachedProfileNames = new Set(this.enumerateProfileNames());
+export class StoredSettings implements ISettings {
+  #cachedProfileNames: Set<string> | undefined;
+  #configFileWatcher: FileSystemWatcher;
+  #diposables: Disposable[];
+
+  constructor(private readonly storage: IKeyValueStorage, private readonly fileSystem: IFileSystem) {
+    this.#diposables = [];
+    this.#configFileWatcher = fileSystem.watchFile(this.configFilepath);
+    this.#configFileWatcher.onDidChange(this.onConfigFileChange, this, this.#diposables);
+    this.#configFileWatcher.onDidCreate(this.onConfigFileChange, this, this.#diposables);
+  }
+
+  dispose() {
+    this.#diposables.forEach(d => d.dispose());
   }
 
   get profile(): string | undefined {
-    return this.context.globalState.get('profile');
+    return this.storage.get(PROFILE_KEY);
   }
 
   async setProfile(profile: string): Promise<void> {
-    await this.context.globalState.update('profile', profile);
+    await this.storage.update(PROFILE_KEY, profile);
     process.env.AWS_PROFILE = profile;
   }
 
@@ -26,16 +37,27 @@ export class GlobalStateBackedSettings implements ISettings {
     return path.join(home, '.aws', 'config');
   }
 
-  /** Enumerates names of profiles from config file at `configFilepath`. */
+  /** Handler for when the config file changes. */
+  onConfigFileChange() {
+    this.#cachedProfileNames = undefined;
+  }
+
+  /** Returns true if name is a known profile name. */
+  isProfileName(name: string): boolean {
+    if (!this.#cachedProfileNames) {
+      this.#cachedProfileNames = new Set(this.enumerateProfileNames());
+    }
+
+    return this.#cachedProfileNames.has(name);
+  }
+
+  /** Enumerates names of profiles from AWS config file. */
   enumerateProfileNames(): string[] | undefined {
-    const contents = fs.readFileSync(this.configFilepath, { encoding: 'utf8' });
-    const profilePattern = /\[\s*profile\s+([^\]]+)\s*\]/g;
+    const contents = this.fileSystem.readTextFile(this.configFilepath);
+    if (!contents) return undefined;
+    const profilePattern = /^\s*\[\s*profile\s+([^\]]+)\s*\]/gm;
     const matches = [...contents.matchAll(profilePattern)];
 
     return matches.map(match => match[1]);
-  }
-
-  isProfileName(name: string): boolean {
-    return this.#cachedProfileNames.has(name);
   }
 }
