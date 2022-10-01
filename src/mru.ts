@@ -1,6 +1,6 @@
-import { ExtensionContext } from 'vscode';
 import { IResourceMRU } from './pick';
 import { ResourceType } from './resource';
+import { IStorage } from './ui/interfaces';
 
 export type MRUFactoryFn = (type: ResourceType) => IResourceMRU;
 
@@ -8,14 +8,14 @@ export class GlobalStateBackedMRU implements IResourceMRU {
   #isRecentUrlCache: Set<string> | undefined;
   #indexOfCache: Map<string, number> | undefined;
 
-  constructor(private readonly context: ExtensionContext, private readonly resourceType: ResourceType) {}
+  constructor(private readonly storage: IStorage, private readonly resourceType: ResourceType) {}
 
   private get globalStateKey(): string {
     return `recent_urls:${this.resourceType}`;
   }
 
   getRecentlySelectedUrls(): string[] {
-    const urls = this.context.globalState.get(this.globalStateKey, []);
+    const urls = this.storage.get(this.globalStateKey, []);
     const result: string[] = [];
     for (const url of urls) {
       if (typeof url === 'string') {
@@ -66,7 +66,7 @@ export class GlobalStateBackedMRU implements IResourceMRU {
 
     const nextRecentUrls = generator(previousRecentUrls);
     if (nextRecentUrls) {
-      await this.context.globalState.update(this.globalStateKey, nextRecentUrls.slice(0, 10));
+      await this.storage.update(this.globalStateKey, nextRecentUrls.slice(0, 10));
       this.invalidateCaches();
     }
   }
