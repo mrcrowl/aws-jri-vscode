@@ -33,7 +33,6 @@ interface SwitchProfileQuickPickItem extends QuickPickItem {
 type VariousQuickPickItem = ResourceQuickPickItem | SeparatorItem | SwitchProfileQuickPickItem;
 
 const CLEAR = new ThemeIcon('search-remove');
-const DUMMY_RESOURCE = {} as Resource;
 const SEPARATOR: SeparatorItem = {
   label: '',
   kind: QuickPickItemKind.Separator,
@@ -45,7 +44,7 @@ export interface ISettings {
   readonly profile: string | undefined;
   setProfile(profile: string): Promise<void>;
   readonly configFilepath: string;
-  enumerateProfileNames(): readonly string[];
+  enumerateProfileNames(): string[] | undefined;
   isProfileName(name: string): boolean;
 }
 
@@ -105,6 +104,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   return new Promise(async resolve => {
     const disposables: Disposable[] = [];
     let lastResources: Resource[] = [];
@@ -154,16 +154,16 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
     }
 
     async function onDidAcceptResource(item: ResourceQuickPickItem) {
-      mru.notifyUrlSelected(item.url);
+      await mru.notifyUrlSelected(item.url);
 
       if (onSelected) {
         try {
           const { finished } = await onSelected(item.resource);
           if (finished) dispose();
-          else pick({ ...params, activeItemURL: item.url, filterText: picker.value });
+          else await pick({ ...params, activeItemURL: item.url, filterText: picker.value });
         } catch (e) {
           assertIsErrorLike(e);
-          window.showErrorMessage(`Unexpected error: ${e.message}`);
+          await window.showErrorMessage(`Unexpected error: ${e.message}`);
           dispose();
         }
       } else {

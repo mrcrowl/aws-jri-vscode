@@ -15,7 +15,7 @@
   },
   "plugins": ["@typescript-eslint"],
   "rules": {
-    "@typescript-eslint/naming-convention": "error",
+    "@typescript-eslint/naming-convention": "off",
     "@typescript-eslint/no-empty-function": "error",
     "@typescript-eslint/no-empty-interface": "error",
     "@typescript-eslint/no-floating-promises": "error",
@@ -33,7 +33,9 @@
     "curly": "off",
     "eqeqeq": "warn",
     "no-throw-literal": "warn",
-    "require-await": "error",
+    "no-unused-vars": "off",
+    "no-async-promise-executor": "off",
+    "require-await": "off",
     "semi": "error"
   },
   "ignorePatterns": ["out", "dist", "**/*.d.ts"]

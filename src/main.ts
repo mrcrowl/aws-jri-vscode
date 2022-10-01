@@ -13,43 +13,48 @@ import * as secrets from './aws/secrets';
 import * as ssm from './aws/ssm';
 import { assertIsErrorLike } from './error';
 import { GlobalStateBackedMRU, MRUFactoryFn } from './mru';
-import { GlobalStateBackedSettings } from './settings';
 import { IResourceMRU, ISettings, pick } from './pick';
-import { chooseProfile, ensureProfile } from './profile';
+import { chooseProfile, ensureProfile, IProfileUI } from './profile';
 import { ResourceType } from './resource';
+import { GlobalStateBackedSettings } from './settings';
+import { IUIFactory } from './ui/factory';
+import { VSCodeProfileUI } from './ui/VSCodeProfileUI';
 
 export function activate(context: ExtensionContext) {
-  context.globalState.update('pinner', null);
   const settings: ISettings = new GlobalStateBackedSettings(context);
   const mruFactory = (type: ResourceType): IResourceMRU => new GlobalStateBackedMRU(context, type);
+  const uiFactory: IUIFactory = {
+    makeProfileUI: () => new VSCodeProfileUI(),
+  };
 
   context.subscriptions.push(
-    commands.registerCommand('jri.switchProfile', () => switchProfile(settings)),
-    commands.registerCommand('jri.route53HostedZones', () => showRoute53HostedZones(mruFactory, settings)),
-    commands.registerCommand('jri.ecsClusters', () => showECSClusters(mruFactory, settings)),
-    commands.registerCommand('jri.s3Buckets', () => showS3Buckets(mruFactory, settings)),
-    commands.registerCommand('jri.lambdaFunctions', () => showLambdaFunctions(mruFactory, settings)),
-    commands.registerCommand('jri.rdsDatabases', () => showRDSDatabases(mruFactory, settings)),
-    commands.registerCommand('jri.cloudformationStacks', () => showCloudFormationStacks(mruFactory, settings)),
-    commands.registerCommand('jri.ec2Instances', () => showEC2Instances(mruFactory, settings)),
-    commands.registerCommand('jri.ec2AutoScalingGroups', () => showAutoscalingGroups(mruFactory, settings)),
-    commands.registerCommand('jri.dynamoDBTables', () => showDynamoDBTables(mruFactory, settings)),
-    commands.registerCommand('jri.cloudfrontDistributions', () => showCloudFrontDistributions(mruFactory, settings)),
-    commands.registerCommand('jri.secrets', () => secrets.showSecrets(mruFactory, settings)),
-    commands.registerCommand('jri.ssmParameters', () => ssm.showParameters(mruFactory, settings)),
+    commands.registerCommand('jri.switchProfile', () => switchProfile(uiFactory.makeProfileUI(), settings)),
+    commands.registerCommand('jri.route53HostedZones', () => showRoute53HostedZones(mruFactory, uiFactory, settings)),
+    commands.registerCommand('jri.ecsClusters', () => showECSClusters(mruFactory, uiFactory, settings)),
+    commands.registerCommand('jri.s3Buckets', () => showS3Buckets(mruFactory, uiFactory, settings)),
+    commands.registerCommand('jri.lambdaFunctions', () => showLambdaFunctions(mruFactory, uiFactory, settings)),
+    commands.registerCommand('jri.rdsDatabases', () => showRDSDatabases(mruFactory, uiFactory, settings)),
+    commands.registerCommand('jri.cloudformationStacks', () =>
+      showCloudFormationStacks(mruFactory, uiFactory, settings),
+    ),
+    commands.registerCommand('jri.ec2Instances', () => showEC2Instances(mruFactory, uiFactory, settings)),
+    commands.registerCommand('jri.ec2AutoScalingGroups', () => showAutoscalingGroups(mruFactory, uiFactory, settings)),
+    commands.registerCommand('jri.dynamoDBTables', () => showDynamoDBTables(mruFactory, uiFactory, settings)),
+    commands.registerCommand('jri.cloudfrontDistributions', () =>
+      showCloudFrontDistributions(mruFactory, uiFactory, settings),
+    ),
+    commands.registerCommand('jri.secrets', () => secrets.showSecrets(mruFactory, uiFactory, settings)),
+    commands.registerCommand('jri.ssmParameters', () => ssm.showParameters(mruFactory, uiFactory, settings)),
   );
 }
 
-// this method is called when your extension is deactivated
-export function deactivate() {}
-
-async function switchProfile(settings: ISettings) {
-  await chooseProfile(settings);
+async function switchProfile(profileUI: IProfileUI, settings: ISettings) {
+  await chooseProfile(profileUI, settings);
 }
 
-async function showECSClusters(makeMRU: MRUFactoryFn, settings: ISettings) {
+async function showECSClusters(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'cluster',
         region: 'ap-southeast-2',
@@ -60,13 +65,13 @@ async function showECSClusters(makeMRU: MRUFactoryFn, settings: ISettings) {
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 
-async function showS3Buckets(makeMRU: MRUFactoryFn, settings: ISettings) {
+async function showS3Buckets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'bucket',
         region: 'ap-southeast-2',
@@ -77,13 +82,13 @@ async function showS3Buckets(makeMRU: MRUFactoryFn, settings: ISettings) {
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 
-async function showLambdaFunctions(makeMRU: MRUFactoryFn, settings: ISettings) {
+async function showLambdaFunctions(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'function',
         region: 'ap-southeast-2',
@@ -94,13 +99,13 @@ async function showLambdaFunctions(makeMRU: MRUFactoryFn, settings: ISettings) {
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 
-async function showRDSDatabases(makeMRU: MRUFactoryFn, settings: ISettings) {
+async function showRDSDatabases(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'database',
         region: 'ap-southeast-2',
@@ -111,13 +116,13 @@ async function showRDSDatabases(makeMRU: MRUFactoryFn, settings: ISettings) {
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 
-async function showCloudFrontDistributions(makeMRU: MRUFactoryFn, settings: ISettings) {
+async function showCloudFrontDistributions(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'distribution',
         region: 'ap-southeast-2',
@@ -128,13 +133,13 @@ async function showCloudFrontDistributions(makeMRU: MRUFactoryFn, settings: ISet
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 
-async function showCloudFormationStacks(makeMRU: MRUFactoryFn, settings: ISettings) {
+async function showCloudFormationStacks(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'stack',
         region: 'ap-southeast-2',
@@ -145,13 +150,13 @@ async function showCloudFormationStacks(makeMRU: MRUFactoryFn, settings: ISettin
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 
-async function showEC2Instances(makeMRU: MRUFactoryFn, settings: ISettings) {
+async function showEC2Instances(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'instance',
         region: 'ap-southeast-2',
@@ -162,13 +167,13 @@ async function showEC2Instances(makeMRU: MRUFactoryFn, settings: ISettings) {
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 
-async function showAutoscalingGroups(makeMRU: MRUFactoryFn, settings: ISettings) {
+async function showAutoscalingGroups(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'ASG',
         region: 'ap-southeast-2',
@@ -179,13 +184,13 @@ async function showAutoscalingGroups(makeMRU: MRUFactoryFn, settings: ISettings)
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 
-async function showDynamoDBTables(makeMRU: MRUFactoryFn, settings: ISettings) {
+async function showDynamoDBTables(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'table',
         region: 'ap-southeast-2',
@@ -196,6 +201,6 @@ async function showDynamoDBTables(makeMRU: MRUFactoryFn, settings: ISettings) {
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }

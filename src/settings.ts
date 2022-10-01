@@ -27,7 +27,7 @@ export class GlobalStateBackedSettings implements ISettings {
   }
 
   /** Enumerates names of profiles from config file at `configFilepath`. */
-  enumerateProfileNames(): readonly string[] {
+  enumerateProfileNames(): string[] | undefined {
     const contents = fs.readFileSync(this.configFilepath, { encoding: 'utf8' });
     const profilePattern = /\[\s*profile\s+([^\]]+)\s*\]/g;
     const matches = [...contents.matchAll(profilePattern)];

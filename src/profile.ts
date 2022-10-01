@@ -1,9 +1,14 @@
-import { window } from 'vscode';
 import { ISettings } from './pick';
 
+export interface IProfileUI {
+  showNoConfigFoundError(configFilepath: string): Promise<void>;
+  showNoProfilesError(configFilepath: string): Promise<void>;
+  pickProfile(profiles: string[]): Promise<string | undefined>;
+}
+
 /** Prompt for profile if none selected. */
-export async function ensureProfile(settings: ISettings): Promise<boolean> {
-  const profile = settings.profile ?? (await chooseProfile(settings));
+export async function ensureProfile(ui: IProfileUI, settings: ISettings): Promise<boolean> {
+  const profile = settings.profile ?? (await chooseProfile(ui, settings));
   if (!profile) return false;
 
   process.env.AWS_PROFILE = profile;
@@ -11,16 +16,16 @@ export async function ensureProfile(settings: ISettings): Promise<boolean> {
 }
 
 /** Presents quick pick for choosing a profile. */
-export async function chooseProfile(settings: ISettings): Promise<string | undefined> {
+export async function chooseProfile(ui: IProfileUI, settings: ISettings): Promise<string | undefined> {
   const configFilepath = settings.configFilepath;
-  const profiles: string[] | undefined = [...settings.enumerateProfileNames()];
+  const profiles: string[] | undefined = settings.enumerateProfileNames();
   if (!profiles) {
-    window.showErrorMessage(`No aws config found at:\n${configFilepath}`);
+    await ui.showNoConfigFoundError(configFilepath);
     return undefined;
   }
 
   if (profiles.length === 0) {
-    window.showErrorMessage(`There are no profiles in:\n${configFilepath}`);
+    await ui.showNoProfilesError(configFilepath);
     return undefined;
   }
 
@@ -29,10 +34,7 @@ export async function chooseProfile(settings: ISettings): Promise<string | undef
     profiles.unshift(...profiles.splice(profiles.indexOf(settings.profile), 1));
   }
 
-  const profile = await window.showQuickPick(profiles, { placeHolder: 'Pick AWS profile' });
-  if (!profile) return undefined;
-
-  settings.setProfile(profile);
-  process.env.AWS_PROFILE = profile;
+  const profile: string | undefined = await ui.pickProfile(profiles);
+  if (profile) await settings.setProfile(profile);
   return profile;
 }

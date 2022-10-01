@@ -2,13 +2,14 @@ import * as route53 from '@aws-sdk/client-route-53';
 import { window } from 'vscode';
 import { assertIsErrorLike } from '../error';
 import { MRUFactoryFn } from '../mru';
-import { IResourceMRU, ISettings, pick } from '../pick';
+import { ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
+import { IUIFactory } from '../ui/factory';
 import { makeResourceLoader } from './common/loader';
 
-export async function showRoute53HostedZones(makeMRU: MRUFactoryFn, settings: ISettings) {
+export async function showRoute53HostedZones(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(settings)) {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
       await pick({
         resourceType: 'hosted zone',
         region: 'ap-southeast-2',
@@ -19,7 +20,7 @@ export async function showRoute53HostedZones(makeMRU: MRUFactoryFn, settings: IS
     }
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 

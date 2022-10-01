@@ -2,14 +2,15 @@ import * as secrets from '@aws-sdk/client-secrets-manager';
 import { window } from 'vscode';
 import { assertIsErrorLike } from '../error';
 import { MRUFactoryFn } from '../mru';
-import { IResourceMRU, ISettings, pick } from '../pick';
+import { ISettings, pick } from '../pick';
 import { ensureProfile } from '../profile';
 import { Resource } from '../resource';
+import { IUIFactory } from '../ui/factory';
 import { IValueRepository, showViewAndEditMenu } from '../view-and-edit-menu';
 import { makeResourceLoader } from './common/loader';
 
-export async function showSecrets(makeMRU: MRUFactoryFn, settings: ISettings) {
-  if (!(await ensureProfile(settings))) return;
+export async function showSecrets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
+  if (!(await ensureProfile(uiFactory.makeProfileUI(), settings))) return;
 
   try {
     await pick({
@@ -31,7 +32,7 @@ export async function showSecrets(makeMRU: MRUFactoryFn, settings: ISettings) {
     });
   } catch (e) {
     assertIsErrorLike(e);
-    window.showErrorMessage(e.message);
+    await window.showErrorMessage(e.message);
   }
 }
 
