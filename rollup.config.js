@@ -19,7 +19,7 @@ const config = {
     esbuild({
       sourceMap: true,
       minify: process.env.NODE_ENV === 'production',
-      target: 'ES2020',
+      target: 'ES2022',
     }),
   ],
 };
