@@ -13,6 +13,7 @@ import { MaybeCacheArray } from './aws/common/cache';
 import { assertIsErrorLike, ErrorLike } from './error';
 import { Resource, ResourceType } from './resource';
 import { partition } from './tools/array';
+import { defer } from './tools/async';
 
 export interface IPickUI {
   showErrorMessage(message: string): Promise<void>;
@@ -37,11 +38,7 @@ interface SwitchProfileQuickPickItem extends QuickPickItem {
 type VariousQuickPickItem = ResourceQuickPickItem | SeparatorItem | SwitchProfileQuickPickItem;
 
 const CLEAR = new ThemeIcon('search-remove');
-const SEPARATOR: SeparatorItem = {
-  label: '',
-  kind: QuickPickItemKind.Separator,
-  variant: 'separator',
-};
+const SEPARATOR: SeparatorItem = { label: '', kind: QuickPickItemKind.Separator, variant: 'separator' };
 
 export interface ISettings {
   /** Selected profile */
@@ -89,6 +86,8 @@ type PickerParams = {
   onSelected?: (resource: Resource) => any | PromiseLike<any>;
 };
 export async function pick(params: PickerParams): Promise<ResourceQuickPickItem | undefined> {
+  const deferred = defer<ResourceQuickPickItem | undefined>();
+
   const { ui, resourceType, region, loadResources, settings, mru, onSelected } = params;
 
   const picker = ui.createQuickPick<VariousQuickPickItem>();
@@ -110,9 +109,30 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  return new Promise(async resolve => {
-    const disposables: Disposable[] = [];
+  function makeProfileItem(profileName: string): SwitchProfileQuickPickItem {
+    return {
+      variant: 'profile',
+      label: `@${profileName}`,
+      profile: profileName,
+      description: `Switch to ${profileName} profile`,
+    };
+  }
+
+  function tryParseProfileName(value: string): string | undefined {
+    if (value.length > 1 && value.startsWith('@')) {
+      const namePart = value.slice(1);
+      if (settings.isProfileName(namePart)) {
+        return namePart;
+      }
+    }
+
+    return undefined;
+  }
+
+  const disposables: Disposable[] = [];
+  const dispose = () => disposables.forEach(d => d.dispose());
+
+  (async () => {
     let lastResources: Resource[] = [];
     let profileName: string | undefined;
 
@@ -127,15 +147,6 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
       }
 
       return [...itemsBefore, SEPARATOR, ...itemsAfter];
-    }
-
-    function makeProfileItem(profileName: string): SwitchProfileQuickPickItem {
-      return {
-        variant: 'profile',
-        label: `@${profileName}`,
-        profile: profileName,
-        description: `Switch to ${profileName} profile`,
-      };
     }
 
     async function onDidAccept() {
@@ -176,12 +187,12 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
         await env.openExternal(Uri.parse(item.url));
         dispose();
       }
-      resolve(item);
+      deferred.resolve(item);
     }
 
     function onDidHide() {
       dispose();
-      resolve(undefined);
+      deferred.resolve(undefined);
     }
 
     async function onDidTriggerItemButton({ button, item }: QuickPickItemButtonEvent<VariousQuickPickItem>) {
@@ -191,10 +202,6 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
     async function clearItem(item: ResourceQuickPickItem) {
       await mru.clearRecentUrl(item.url);
       render(lastResources);
-    }
-
-    function dispose() {
-      disposables.forEach(d => d.dispose());
     }
 
     function render(resources: readonly Resource[]) {
@@ -232,19 +239,6 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
       }
     }
 
-    function tryParseProfileName(value: string): string | undefined {
-      if (value.startsWith('@')) {
-        const namePart = value.slice(1);
-        if (namePart.length > 2) {
-          if (settings.isProfileName(namePart)) {
-            return namePart;
-          }
-        }
-      }
-
-      return undefined;
-    }
-
     picker.onDidAccept(onDidAccept, undefined, disposables);
     picker.onDidHide(onDidHide, undefined, disposables);
     picker.onDidTriggerItemButton(onDidTriggerItemButton, undefined, disposables);
@@ -276,7 +270,9 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
     }
 
     picker.busy = false;
-  });
+  })().catch(deferred.reject);
+
+  return deferred.promise;
 }
 
 function sortByResourceName(a: Resource, b: Resource): number {
