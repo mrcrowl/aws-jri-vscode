@@ -64,10 +64,18 @@ describe('GlobalStateBackedMRU', () => {
       await mru.notifyUrlSelected(META_URL);
       await mru.notifyUrlSelected(GOOGLE_URL);
       await mru.notifyUrlSelected(AMAZON_URL);
+      expect(mru.indexOf(META_URL)).toBe(2);
+      expect(mru.isRecentUrl(APPLE_URL)).toBe(true);
       await mru.clearRecentUrl(APPLE_URL);
+      await mru.notifyUrlSelected(META_URL);
 
       // Assert.
-      expect(mru.getRecentlySelectedUrls()).toEqual([AMAZON_URL, GOOGLE_URL, META_URL]);
+      expect(mru.getRecentlySelectedUrls()).toEqual([META_URL, AMAZON_URL, GOOGLE_URL]);
+      expect(mru.indexOf(META_URL)).toBe(0);
+      expect(mru.indexOf(AMAZON_URL)).toBe(1);
+      expect(mru.indexOf(GOOGLE_URL)).toBe(2);
+      expect(mru.indexOf(APPLE_URL)).toBe(-1);
+      expect(mru.isRecentUrl(APPLE_URL)).toBe(false);
     });
   });
 
