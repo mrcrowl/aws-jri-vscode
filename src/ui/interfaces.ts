@@ -1,4 +1,4 @@
-import { FileSystemWatcher } from 'vscode';
+import { FileSystemWatcher, QuickPickItem, ThemeIcon } from 'vscode';
 import { IPickUI } from '../pick';
 import { IProfileUI } from '../profile';
 
@@ -16,4 +16,11 @@ export interface IKeyValueStorage {
 export interface IFileSystem {
   readTextFile(filename: string): string | undefined;
   watchFile(filename: string): FileSystemWatcher;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface FakeThemeIcon extends ThemeIcon {}
+
+export interface SeparatorItem extends QuickPickItem {
+  variant: 'separator';
 }

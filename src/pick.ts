@@ -1,44 +1,32 @@
-import {
-  Disposable,
-  env,
-  QuickPick,
-  QuickPickItem,
-  QuickPickItemButtonEvent,
-  QuickPickItemKind,
-  ThemeIcon,
-  Uri,
-} from 'vscode';
+import type { Disposable, QuickPick, QuickPickItem, QuickPickItemButtonEvent } from 'vscode';
 import { IAuthHooks } from './aws/common/auth';
 import { MaybeCacheArray } from './aws/common/cache';
 import { assertIsErrorLike, ErrorLike } from './error';
 import { Resource, ResourceType } from './resource';
 import { partition } from './tools/array';
 import { defer } from './tools/async';
+import { FakeThemeIcon, SeparatorItem } from './ui/interfaces';
 
 export interface IPickUI {
   showErrorMessage(message: string): Promise<void>;
   createQuickPick<T extends QuickPickItem>(): QuickPick<T>;
+  openUrl(url: string): Promise<boolean>;
+  readonly clearIcon: FakeThemeIcon;
+  readonly separator: SeparatorItem;
 }
 
-interface ResourceQuickPickItem extends QuickPickItem {
+export interface ResourceQuickPickItem extends QuickPickItem {
   variant: 'resource';
   url: string;
   resource: Resource;
 }
 
-interface SeparatorItem extends QuickPickItem {
-  variant: 'separator';
-}
-
-interface SwitchProfileQuickPickItem extends QuickPickItem {
+export interface SwitchProfileQuickPickItem extends QuickPickItem {
   variant: 'profile';
   profile: string;
 }
 
-type VariousQuickPickItem = ResourceQuickPickItem | SeparatorItem | SwitchProfileQuickPickItem;
-
-const CLEAR = new ThemeIcon('search-remove');
-const SEPARATOR: SeparatorItem = { label: '', kind: QuickPickItemKind.Separator, variant: 'separator' };
+export type VariousQuickPickItem = ResourceQuickPickItem | SeparatorItem | SwitchProfileQuickPickItem;
 
 export interface ISettings {
   /** Selected profile */
@@ -69,12 +57,13 @@ export interface IResourceMRU {
 
 export interface ResourceLoadOptions {
   region: string;
+  profile?: string;
   loginHooks: IAuthHooks;
   settings: ISettings;
   skipCache?: boolean;
 }
 
-type PickerParams = {
+export type PickParams = {
   ui: IPickUI;
   resourceType: ResourceType;
   region: string;
@@ -85,7 +74,7 @@ type PickerParams = {
   loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<Resource>>;
   onSelected?: (resource: Resource) => any | PromiseLike<any>;
 };
-export async function pick(params: PickerParams): Promise<ResourceQuickPickItem | undefined> {
+export async function pick(params: PickParams): Promise<ResourceQuickPickItem | undefined> {
   const deferred = defer<ResourceQuickPickItem | undefined>();
 
   const { ui, resourceType, region, loadResources, settings, mru, onSelected } = params;
@@ -94,7 +83,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
   picker.busy = true;
   picker.value = params.filterText ?? '';
 
-  const clearButton = { iconPath: CLEAR, tooltip: `Remove this ${resourceType} from recent list` };
+  const clearButton = { iconPath: ui.clearIcon, tooltip: `Remove this ${resourceType} from recent list` };
 
   function makeQuickPickItem(item: Resource): ResourceQuickPickItem {
     const isRecent = mru.isRecentUrl(item.url);
@@ -143,10 +132,19 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
 
       if (profileName) {
         const profileItem = makeProfileItem(profileName);
-        return [profileItem, ...itemsBefore, SEPARATOR, ...itemsAfter];
+        return [profileItem, ...itemsBefore, ui.separator, ...itemsAfter];
       }
 
-      return [...itemsBefore, SEPARATOR, ...itemsAfter];
+      return [...itemsBefore, ui.separator, ...itemsAfter];
+    }
+
+    function onDidChangeValue(value: string) {
+      const previousProfileName = profileName;
+      const nextProfileName = tryParseProfileName(value);
+      if (nextProfileName !== previousProfileName) {
+        profileName = nextProfileName;
+        render(lastResources);
+      }
     }
 
     async function onDidAccept() {
@@ -184,7 +182,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
           dispose();
         }
       } else {
-        await env.openExternal(Uri.parse(item.url));
+        await ui.openUrl(item.url);
         dispose();
       }
       deferred.resolve(item);
@@ -230,15 +228,6 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
       lastResources = resourcesWithRecentFirst;
     }
 
-    function onDidChangeValue(value: string) {
-      const previousProfileName = profileName;
-      const nextProfileName = tryParseProfileName(value);
-      if (nextProfileName !== previousProfileName) {
-        profileName = nextProfileName;
-        render(lastResources);
-      }
-    }
-
     picker.onDidAccept(onDidAccept, undefined, disposables);
     picker.onDidHide(onDidHide, undefined, disposables);
     picker.onDidTriggerItemButton(onDidTriggerItemButton, undefined, disposables);
@@ -247,7 +236,13 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
     picker.placeholder = `Loading ${resourceType}s... (@${settings.profile})`;
 
     const hooks = makeQuickPickAuthHooks(picker);
-    const resources = await loadResources({ loginHooks: hooks, region: region, skipCache: false, settings });
+    const resources = await loadResources({
+      loginHooks: hooks,
+      region: region,
+      profile: settings.profile,
+      skipCache: false,
+      settings,
+    });
     picker.items = resources.sort(sortByResourceName).map(makeQuickPickItem);
     if (params.activeItemURL) {
       picker.activeItems = picker.items.filter(
@@ -263,6 +258,7 @@ export async function pick(params: PickerParams): Promise<ResourceQuickPickItem 
       const freshResources = await loadResources({
         loginHooks: hooks,
         region: region,
+        profile: settings.profile,
         skipCache: true,
         settings,
       });

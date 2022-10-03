@@ -121,7 +121,7 @@ describe('StoredSettings', () => {
   });
 });
 
-const EXAMPLE_CONFIG_FILE_CONTENTS = `[default]
+export const EXAMPLE_CONFIG_FILE_CONTENTS = `[default]
 region=ap-southeast-2
 
 ;; RANDOM COMMENT

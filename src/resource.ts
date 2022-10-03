@@ -6,7 +6,6 @@ export interface Resource {
 }
 
 export type ResourceType =
-  | 'asg'
   | 'ASG'
   | 'bucket'
   | 'cluster'
