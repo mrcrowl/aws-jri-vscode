@@ -7,7 +7,7 @@ import type {
   QuickPickItemButtonEvent,
   Uri,
 } from 'vscode';
-import { ResourceQuickPickItem, VariousQuickPickItem } from '../pick';
+import { SelectResourceQuickPickItem, VariousQuickPickItem } from '../pick';
 import { Resource } from '../resource';
 import { IKeyValueStorage } from '../ui/interfaces';
 
@@ -133,7 +133,7 @@ export class FakeQuickPick implements QuickPick<VariousQuickPickItem> {
   }
 
   fakeSelectResourceWithUrl(url: string) {
-    this.fakeSelectItems(item => item.variant === 'resource' && item.url === url);
+    this.fakeSelectItems(item => item.variant === 'resource:select' && item.url === url);
   }
 
   fakeSelectItems(filter: (item: VariousQuickPickItem) => boolean) {
@@ -145,7 +145,9 @@ export class FakeQuickPick implements QuickPick<VariousQuickPickItem> {
   }
 
   get itemResources(): readonly Resource[] {
-    const resourceItems = this.items.filter(item => item.variant === 'resource') as ResourceQuickPickItem[];
+    const resourceItems = this.items.filter(
+      item => item.variant === 'resource:select',
+    ) as SelectResourceQuickPickItem[];
     return resourceItems.map(item => item.resource);
   }
 

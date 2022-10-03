@@ -13,8 +13,9 @@ export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactor
   if (!(await ensureProfile(uiFactory.makeProfileUI(), settings))) return;
 
   try {
+    const ui = uiFactory.makePickUI();
     await pick({
-      ui: uiFactory.makePickUI(),
+      ui,
       resourceType: 'parameter',
       region: 'ap-southeast-2',
       loadResources: getParameters,
@@ -29,6 +30,10 @@ export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactor
           valueRepository: readerWriter,
           settings,
         });
+      },
+      onUnmatched: async (text: string) => {
+        console.log(`hello: ${text}`);
+        return { finished: true };
       },
     });
   } catch (e) {

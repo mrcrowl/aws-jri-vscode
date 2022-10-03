@@ -15,18 +15,26 @@ export interface IPickUI {
   readonly separator: SeparatorItem;
 }
 
-export interface ResourceQuickPickItem extends QuickPickItem {
-  variant: 'resource';
+export interface SelectResourceQuickPickItem extends QuickPickItem {
+  variant: 'resource:select';
   url: string;
   resource: Resource;
 }
 
 export interface SwitchProfileQuickPickItem extends QuickPickItem {
-  variant: 'profile';
+  variant: 'profile:switch';
   profile: string;
 }
 
-export type VariousQuickPickItem = ResourceQuickPickItem | SeparatorItem | SwitchProfileQuickPickItem;
+export interface CreateResourceQuickPickItem extends QuickPickItem {
+  variant: 'resource:create';
+}
+
+export type VariousQuickPickItem =
+  | SelectResourceQuickPickItem
+  | SeparatorItem
+  | SwitchProfileQuickPickItem
+  | CreateResourceQuickPickItem;
 
 export interface ISettings {
   /** Selected profile */
@@ -72,12 +80,13 @@ export type PickParams = {
   filterText?: string;
   activeItemURL?: string;
   loadResources: (options: ResourceLoadOptions) => Promise<MaybeCacheArray<Resource>>;
-  onSelected?: (resource: Resource) => any | PromiseLike<any>;
+  onSelected?: (resource: Resource) => { finished: boolean } | PromiseLike<{ finished: boolean }>;
+  onUnmatched?: (text: string) => { finished: boolean } | PromiseLike<{ finished: boolean }>;
 };
-export async function pick(params: PickParams): Promise<ResourceQuickPickItem | undefined> {
-  const deferred = defer<ResourceQuickPickItem | undefined>();
+export async function pick(params: PickParams): Promise<SelectResourceQuickPickItem | undefined> {
+  const deferred = defer<SelectResourceQuickPickItem | undefined>();
 
-  const { ui, resourceType, region, loadResources, settings, mru, onSelected } = params;
+  const { ui, resourceType, region, loadResources, settings, mru, onSelected, onUnmatched } = params;
 
   const picker = ui.createQuickPick<VariousQuickPickItem>();
   picker.busy = true;
@@ -85,11 +94,11 @@ export async function pick(params: PickParams): Promise<ResourceQuickPickItem | 
 
   const clearButton = { iconPath: ui.clearIcon, tooltip: `Remove this ${resourceType} from recent list` };
 
-  function makeQuickPickItem(item: Resource): ResourceQuickPickItem {
+  function makeQuickPickItem(item: Resource): SelectResourceQuickPickItem {
     const isRecent = mru.isRecentUrl(item.url);
 
     return {
-      variant: 'resource',
+      variant: 'resource:select',
       label: item.name,
       description: item.description,
       url: item.url,
@@ -100,7 +109,7 @@ export async function pick(params: PickParams): Promise<ResourceQuickPickItem | 
 
   function makeProfileItem(profileName: string): SwitchProfileQuickPickItem {
     return {
-      variant: 'profile',
+      variant: 'profile:switch',
       label: `@${profileName}`,
       profile: profileName,
       description: `Switch to ${profileName} profile`,
@@ -120,25 +129,36 @@ export async function pick(params: PickParams): Promise<ResourceQuickPickItem | 
 
   const disposables: Disposable[] = [];
   const dispose = () => disposables.forEach(d => d.dispose());
+  const CREATE_ITEM: CreateResourceQuickPickItem = {
+    label: `$(plus) Create new ${resourceType} ...`,
+    variant: 'resource:create',
+    alwaysShow: true,
+  };
 
   (async () => {
     let lastResources: Resource[] = [];
     let profileName: string | undefined;
 
-    function makePickItems(resources: Resource[], numRecent: number) {
-      const items: ResourceQuickPickItem[] = resources.map(makeQuickPickItem);
+    function makeQuickPickItems(resources: Resource[], numRecent: number) {
+      const items: SelectResourceQuickPickItem[] = resources.map(makeQuickPickItem);
       const itemsBefore = items.slice(0, numRecent);
       const itemsAfter = items.slice(numRecent);
+      const separatedItems: VariousQuickPickItem[] = [...itemsBefore, ui.separator, ...itemsAfter];
 
       if (profileName) {
         const profileItem = makeProfileItem(profileName);
-        return [profileItem, ...itemsBefore, ui.separator, ...itemsAfter];
+        separatedItems.unshift(profileItem);
       }
 
-      return [...itemsBefore, ui.separator, ...itemsAfter];
+      if (onUnmatched) {
+        separatedItems.push(CREATE_ITEM);
+      }
+
+      return separatedItems;
     }
 
     function onDidChangeValue(value: string) {
+      // Profile shortcut: e.g. `@dev`
       const previousProfileName = profileName;
       const nextProfileName = tryParseProfileName(value);
       if (nextProfileName !== previousProfileName) {
@@ -150,25 +170,45 @@ export async function pick(params: PickParams): Promise<ResourceQuickPickItem | 
     async function onDidAccept() {
       const item = picker.selectedItems[0];
       if (!item) return;
-      if (item.variant === 'resource' && !item.url) return;
+      if (item.variant === 'resource:select' && !item.url) return;
 
       switch (item.variant) {
-        case 'resource':
-          await onDidAcceptResource(item);
+        case 'resource:select':
+          await selectResource(item);
           break;
 
-        case 'profile':
-          await onDidAcceptSwitchProfile(item);
+        case 'resource:create':
+          await addResource();
+          picker.hide();
+          break;
+
+        case 'profile:switch':
+          await switchProfile(item);
           break;
       }
     }
 
-    async function onDidAcceptSwitchProfile(item: SwitchProfileQuickPickItem) {
+    async function addResource() {
+      if (onUnmatched) {
+        try {
+          const { finished } = await onUnmatched(picker.value);
+          if (finished) dispose();
+          else await pick({ ...params, filterText: picker.value });
+        } catch (e) {
+          assertIsErrorLike(e);
+          await ui.showErrorMessage(`Unexpected error adding resource: ${e.message}`);
+          dispose();
+        }
+      }
+      deferred.resolve(undefined);
+    }
+
+    async function switchProfile(item: SwitchProfileQuickPickItem) {
       await settings.setProfile(item.profile);
       await pick(params);
     }
 
-    async function onDidAcceptResource(item: ResourceQuickPickItem) {
+    async function selectResource(item: SelectResourceQuickPickItem) {
       await mru.notifyUrlSelected(item.url);
 
       if (onSelected) {
@@ -194,10 +234,10 @@ export async function pick(params: PickParams): Promise<ResourceQuickPickItem | 
     }
 
     async function onDidTriggerItemButton({ button, item }: QuickPickItemButtonEvent<VariousQuickPickItem>) {
-      if (item.variant === 'resource' && button === clearButton) await clearItem(item);
+      if (item.variant === 'resource:select' && button === clearButton) await clearItem(item);
     }
 
-    async function clearItem(item: ResourceQuickPickItem) {
+    async function clearItem(item: SelectResourceQuickPickItem) {
       await mru.clearRecentUrl(item.url);
       render(lastResources);
     }
@@ -216,12 +256,16 @@ export async function pick(params: PickParams): Promise<ResourceQuickPickItem | 
       const resourcesWithRecentFirst = [...recent.sort(sortByRecentOrder), ...rest];
 
       if (picker.items.length > 0) {
-        const activeQPIs = picker.activeItems.filter(item => item.variant === 'resource') as ResourceQuickPickItem[];
+        const activeQPIs = picker.activeItems.filter(
+          item => item.variant === 'resource:select',
+        ) as SelectResourceQuickPickItem[];
         const activeItemURLs = new Set(activeQPIs.map(item => item.url));
         picker.keepScrollPosition = true;
-        picker.items = makePickItems(resourcesWithRecentFirst, recent.length);
+        picker.items = makeQuickPickItems(resourcesWithRecentFirst, recent.length);
         if (activeItemURLs.size > 0) {
-          picker.activeItems = picker.items.filter(item => item.variant === 'resource' && activeItemURLs.has(item.url));
+          picker.activeItems = picker.items.filter(
+            item => item.variant === 'resource:select' && activeItemURLs.has(item.url),
+          );
         }
       }
 
@@ -246,7 +290,7 @@ export async function pick(params: PickParams): Promise<ResourceQuickPickItem | 
     picker.items = resources.sort(sortByResourceName).map(makeQuickPickItem);
     if (params.activeItemURL) {
       picker.activeItems = picker.items.filter(
-        item => item.variant === 'resource' && item.url === params.activeItemURL,
+        item => item.variant === 'resource:select' && item.url === params.activeItemURL,
       );
     }
     const plural = resources.length === 1 ? '' : 's';

@@ -2,7 +2,7 @@ import { anyString, instance, mock, reset, verify, when } from 'ts-mockito';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MaybeCacheArray } from './aws/common/cache';
 import { MRU } from './mru';
-import { IPickUI, ISettings, pick, PickParams, ResourceLoadOptions } from './pick';
+import { IPickUI, ISettings, pick, PickParams, ResourceLoadOptions, VariousQuickPickItem } from './pick';
 import { Resource } from './resource';
 import { sleep } from './tools/async';
 import { SeparatorItem } from './ui/interfaces';
@@ -111,7 +111,7 @@ describe('pick', () => {
 
     const restAreResources = rest
       .filter(item => item.variant !== 'separator')
-      .every(item => item.variant === 'resource');
+      .every(item => item.variant === 'resource:select');
     expect(restAreResources).toBe(true);
 
     picker.selectedItems = [firstItem];
@@ -133,7 +133,23 @@ describe('pick', () => {
     expect(fourth.profile).toBe('prod');
   });
 
-  function makeParams() {
+  it('when onNew is specifed, the last item matches the filter text', async () => {
+    let lastItem: VariousQuickPickItem | undefined;
+
+    const params = makeParams({
+      onUnmatched() {
+        return { finished: true };
+      },
+    });
+    const _ = pick(params);
+
+    await sleep(0);
+
+    lastItem = picker.items[picker.items.length - 1];
+    expect(lastItem?.label).toMatch(/Create new/);
+  });
+
+  function makeParams(adjustments?: Partial<PickParams>) {
     const params: PickParams = {
       ui: instance(ui),
       resourceType: 'ASG',
@@ -141,6 +157,7 @@ describe('pick', () => {
       settings: instance(settings),
       loadResources: mockLoadResourcesFn,
       mru,
+      ...adjustments,
     };
     return params;
   }
