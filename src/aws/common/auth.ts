@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import * as process from 'process';
-import { ErrorLike, assertIsErrorLike } from '../../error';
-import { ISettings } from '../../pick';
+import { assertIsErrorLike, ErrorLike } from '../../tools/error';
+import { ISettings } from '../../ui/interfaces';
 
 export interface IAuthHooks {
   onAttempt: () => void;

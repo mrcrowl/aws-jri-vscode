@@ -1,4 +1,4 @@
-import { Resource } from "../../resource";
+import { Resource } from '../../model/resource';
 
 export type MaybeCacheArray<T> = T[] & { fromCache?: boolean };
 
@@ -6,7 +6,7 @@ export class ResourceCache {
   private cache = new Map<string, MaybeCacheArray<Resource>>();
 
   private static makeCacheKey(region: string, profile: string | undefined): string {
-    return `${profile ?? ""}:${region}`;
+    return `${profile ?? ''}:${region}`;
   }
 
   set(region: string, profile: string | undefined, resources: readonly Resource[]) {

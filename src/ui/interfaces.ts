@@ -1,7 +1,16 @@
 import { FileSystemWatcher, QuickPickItem, ThemeIcon } from 'vscode';
-import { IPickUI } from '../pick';
-import { IProfileUI } from '../profile';
+import { IPickUI } from './pick';
+import { IProfileUI } from './profile';
 
+export interface ISettings {
+  /** Selected profile */
+  readonly profile: string | undefined;
+  setProfile(profile: string): Promise<void>;
+  readonly configFilepath: string;
+  enumerateProfileNames(): string[] | undefined;
+  isProfileName(name: string): boolean;
+  dispose(): void;
+}
 export interface IUIFactory {
   makeProfileUI(): IProfileUI;
   makePickUI(): IPickUI;

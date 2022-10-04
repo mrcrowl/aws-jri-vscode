@@ -1,11 +1,11 @@
 import type { Disposable, QuickPick, QuickPickItem, QuickPickItemButtonEvent } from 'vscode';
-import { IAuthHooks } from './aws/common/auth';
-import { MaybeCacheArray } from './aws/common/cache';
-import { assertIsErrorLike, ErrorLike } from './error';
-import { Resource, ResourceType } from './resource';
-import { partition } from './tools/array';
-import { defer } from './tools/async';
-import { FakeThemeIcon, SeparatorItem } from './vscode/interfaces';
+import { IAuthHooks } from '../aws/common/auth';
+import { MaybeCacheArray } from '../aws/common/cache';
+import { Resource, ResourceType } from '../model/resource';
+import { partition } from '../tools/array';
+import { defer } from '../tools/async';
+import { assertIsErrorLike, ErrorLike } from '../tools/error';
+import { FakeThemeIcon, ISettings, SeparatorItem } from './interfaces';
 
 export interface IPickUI {
   showErrorMessage(message: string): Promise<void>;
@@ -35,16 +35,6 @@ export type VariousQuickPickItem =
   | SeparatorItem
   | SwitchProfileQuickPickItem
   | CreateResourceQuickPickItem;
-
-export interface ISettings {
-  /** Selected profile */
-  readonly profile: string | undefined;
-  setProfile(profile: string): Promise<void>;
-  readonly configFilepath: string;
-  enumerateProfileNames(): string[] | undefined;
-  isProfileName(name: string): boolean;
-  dispose(): void;
-}
 
 export interface IResourceMRU {
   /** Get recently selected URLs for `resourceType`. */

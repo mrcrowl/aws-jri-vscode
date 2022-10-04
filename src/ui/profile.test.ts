@@ -1,8 +1,8 @@
 import { anyString, anything, capture, instance, mock, reset, verify, when } from 'ts-mockito';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ISettings } from './pick';
-import { chooseProfile, IProfileUI } from './profile';
 import {} from 'vscode';
+import { ISettings } from './interfaces';
+import { chooseProfile, IProfileUI } from './profile';
 
 vi.mock('vscode', () => {
   return {};

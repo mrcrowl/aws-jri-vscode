@@ -1,6 +1,6 @@
 import * as cf from '@aws-sdk/client-cloudformation';
-import { ResourceLoadOptions } from '../pick';
-import { Resource } from '../resource';
+import { Resource } from '../model/resource';
+import { ResourceLoadOptions } from '../ui/pick';
 import { runAWSCommandWithAuthentication } from './common/auth';
 import { ResourceCache } from './common/cache';
 

@@ -1,12 +1,12 @@
 import * as ssm from '@aws-sdk/client-ssm';
 import { window } from 'vscode';
-import { assertIsErrorLike } from '../error';
-import { MRUFactoryFn } from '../mru';
-import { ISettings, pick } from '../pick';
-import { ensureProfile } from '../profile';
-import { Resource } from '../resource';
-import { IUIFactory } from '../vscode/interfaces';
-import { IValueRepository, showViewAndEditMenu } from '../view-and-edit-menu';
+import { MRUFactoryFn } from '../model/mru';
+import { Resource } from '../model/resource';
+import { assertIsErrorLike } from '../tools/error';
+import { ISettings, IUIFactory } from '../ui/interfaces';
+import { pick } from '../ui/pick';
+import { ensureProfile } from '../ui/profile';
+import { IValueRepository, showViewAndEditMenu } from '../ui/view-and-edit-menu';
 import { makeResourceLoader } from './common/loader';
 
 export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {

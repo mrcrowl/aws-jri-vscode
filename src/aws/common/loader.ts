@@ -1,7 +1,7 @@
-import { ResourceLoadOptions } from '../../pick';
-import { ResourceCache } from './cache';
+import { Resource } from '../../model/resource';
+import { ResourceLoadOptions } from '../../ui/pick';
 import { runAWSCommandWithAuthentication } from './auth';
-import { Resource } from '../../resource';
+import { ResourceCache } from './cache';
 
 export interface ResourceLoader {
   (options: ResourceLoadOptions): Promise<Resource[]>;

@@ -1,4 +1,4 @@
-import { ISettings } from './pick';
+import { ISettings } from './interfaces';
 
 export interface IProfileUI {
   showNoConfigFoundError(configFilepath: string): Promise<void>;

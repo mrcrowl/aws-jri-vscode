@@ -1,5 +1,5 @@
 import { ExtensionContext } from 'vscode';
-import { IKeyValueStorage } from './interfaces';
+import { IKeyValueStorage } from '../ui/interfaces';
 
 export class VSCodeContextStorage implements IKeyValueStorage {
   constructor(private readonly context: ExtensionContext) {}

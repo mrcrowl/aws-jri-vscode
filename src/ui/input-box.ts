@@ -1,5 +1,5 @@
 import { Disposable, window } from 'vscode';
-import { assertIsErrorLike } from './error';
+import { assertIsErrorLike } from '../tools/error';
 
 export function showInputBoxWithJSONValidation(initialValue: string = '', placeholder?: string) {
   return new Promise<string | void>(resolve => {

@@ -2,10 +2,9 @@ import 'os';
 import { anyString, instance, mock, reset, when } from 'ts-mockito';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Uri } from 'vscode';
-import { ISettings } from './pick';
+import { IFileSystem, IKeyValueStorage, ISettings } from '../ui/interfaces';
+import { FakeFileSystemWatcher, FakeStorage } from '../__test__/fakes';
 import { PROFILE_KEY, StoredSettings } from './settings';
-import { IFileSystem, IKeyValueStorage } from './vscode/interfaces';
-import { FakeStorage, FakeFileSystemWatcher } from './__test__/fakes';
 
 vi.mock('os', () => {
   return { homedir: () => '/home/me' };

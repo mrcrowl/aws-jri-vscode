@@ -1,10 +1,10 @@
 import * as route53 from '@aws-sdk/client-route-53';
 import { window } from 'vscode';
-import { assertIsErrorLike } from '../error';
-import { MRUFactoryFn } from '../mru';
-import { ISettings, pick } from '../pick';
-import { ensureProfile } from '../profile';
-import { IUIFactory } from '../vscode/interfaces';
+import { MRUFactoryFn } from '../model/mru';
+import { assertIsErrorLike } from '../tools/error';
+import { ISettings, IUIFactory } from '../ui/interfaces';
+import { pick } from '../ui/pick';
+import { ensureProfile } from '../ui/profile';
 import { makeResourceLoader } from './common/loader';
 
 export async function showRoute53HostedZones(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {

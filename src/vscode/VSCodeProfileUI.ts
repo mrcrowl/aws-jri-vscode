@@ -1,5 +1,5 @@
 import { window } from 'vscode';
-import { IProfileUI } from '../profile';
+import { IProfileUI } from '../ui/profile';
 
 export class VSCodeProfileUI implements IProfileUI {
   async showNoConfigFoundError(configFilepath: string): Promise<void> {

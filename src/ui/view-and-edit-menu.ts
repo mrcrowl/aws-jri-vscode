@@ -1,10 +1,10 @@
-import { Disposable, ProgressLocation, QuickPickItem, window, env, Uri } from 'vscode';
-import { assertIsErrorLike } from './error';
-import { ISettings } from './pick';
-import { Resource } from './resource';
+import { Disposable, env, ProgressLocation, QuickPickItem, Uri, window } from 'vscode';
+import { Resource } from '../model/resource';
+import { sleep } from '../tools/async';
+import { toSentenceCase } from '../tools/case';
+import { assertIsErrorLike } from '../tools/error';
 import { showInputBoxWithJSONValidation } from './input-box';
-import { toSentenceCase } from './tools/case';
-import { sleep } from './tools/async';
+import { ISettings } from './interfaces';
 
 interface ActionItem extends QuickPickItem {
   readonly action: (item: ActionItem) => { finished: boolean } | PromiseLike<{ finished: boolean }>;

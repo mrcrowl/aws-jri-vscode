@@ -7,9 +7,9 @@ import type {
   QuickPickItemButtonEvent,
   Uri,
 } from 'vscode';
-import { SelectResourceQuickPickItem, VariousQuickPickItem } from '../pick';
-import { Resource } from '../resource';
-import { IKeyValueStorage } from '../vscode/interfaces';
+import { Resource } from '../model/resource';
+import { IKeyValueStorage } from '../ui/interfaces';
+import { SelectResourceQuickPickItem, VariousQuickPickItem } from '../ui/pick';
 
 export class FakeStorage implements IKeyValueStorage {
   private readonly storedValues = new Map<string, unknown>();

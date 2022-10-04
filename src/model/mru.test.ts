@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { IKeyValueStorage } from '../ui/interfaces';
+import { IResourceMRU } from '../ui/pick';
 import { MRU } from './mru';
-import { IResourceMRU } from './pick';
-import { IKeyValueStorage } from './vscode/interfaces';
 
 const RECENT_URLS_KEY = 'recent_urls:bucket';
 const AMAZON_URL = 'https://amazon.com';

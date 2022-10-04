@@ -1,6 +1,6 @@
-import { IFileSystem } from './interfaces';
+import { IFileSystem } from '../ui/interfaces';
 import * as fs from 'fs';
-import { assertIsErrorLike } from '../error';
+import { assertIsErrorLike } from '../tools/error';
 import { FileSystemWatcher, workspace } from 'vscode';
 
 export class NodeFileSystem implements IFileSystem {

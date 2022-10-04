@@ -1,12 +1,12 @@
 import { anyString, instance, mock, reset, verify, when } from 'ts-mockito';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MaybeCacheArray } from './aws/common/cache';
-import { MRU } from './mru';
-import { IPickUI, ISettings, pick, PickParams, ResourceLoadOptions, VariousQuickPickItem } from './pick';
-import { Resource } from './resource';
-import { sleep } from './tools/async';
-import { SeparatorItem } from './vscode/interfaces';
-import { FakeQuickPick, FakeStorage } from './__test__/fakes';
+import { MaybeCacheArray } from '../aws/common/cache';
+import { MRU } from '../model/mru';
+import { Resource } from '../model/resource';
+import { sleep } from '../tools/async';
+import { FakeQuickPick, FakeStorage } from '../__test__/fakes';
+import { ISettings, SeparatorItem } from './interfaces';
+import { IPickUI, pick, PickParams, ResourceLoadOptions, VariousQuickPickItem } from './pick';
 
 const RESOURCES = makeResources('A', 'B', 'C', 'D');
 const [RESOURCE_A, RESOURCE_B, RESOURCE_C, RESOURCE_D] = RESOURCES;

@@ -1,6 +1,6 @@
 import { env, QuickPick, QuickPickItem, QuickPickItemKind, ThemeIcon, Uri, window } from 'vscode';
-import { IPickUI } from '../pick';
-import { SeparatorItem } from './interfaces';
+import { SeparatorItem } from '../ui/interfaces';
+import { IPickUI } from '../ui/pick';
 
 const CLEAR = new ThemeIcon('search-remove');
 const SEPARATOR: SeparatorItem = { label: '', kind: QuickPickItemKind.Separator, variant: 'separator' };

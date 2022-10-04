@@ -1,12 +1,6 @@
 import * as cf from '@aws-sdk/client-cloudfront';
-import { CloudFront, Distribution, DistributionSummary } from '@aws-sdk/client-cloudfront';
-import { ResourceLoadOptions } from '../pick';
-import { Resource } from '../resource';
-import { runAWSCommandWithAuthentication } from './common/auth';
-import { ResourceCache } from './common/cache';
+import { DistributionSummary } from '@aws-sdk/client-cloudfront';
 import { makeResourceLoader } from './common/loader';
-
-const cache = new ResourceCache();
 
 export const getDistributions = makeResourceLoader<cf.CloudFrontClient, cf.DistributionSummary>({
   init({ region }) {
