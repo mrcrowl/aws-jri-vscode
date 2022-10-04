@@ -1,6 +1,6 @@
 import { IResourceMRU } from './pick';
 import { ResourceType } from './resource';
-import { IKeyValueStorage } from './ui/interfaces';
+import { IKeyValueStorage } from './vscode/interfaces';
 
 export type MRUFactoryFn = (type: ResourceType) => IResourceMRU;
 

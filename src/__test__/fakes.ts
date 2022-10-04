@@ -9,7 +9,7 @@ import type {
 } from 'vscode';
 import { SelectResourceQuickPickItem, VariousQuickPickItem } from '../pick';
 import { Resource } from '../resource';
-import { IKeyValueStorage } from '../ui/interfaces';
+import { IKeyValueStorage } from '../vscode/interfaces';
 
 export class FakeStorage implements IKeyValueStorage {
   private readonly storedValues = new Map<string, unknown>();

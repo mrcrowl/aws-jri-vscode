@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Uri } from 'vscode';
 import { ISettings } from './pick';
 import { PROFILE_KEY, StoredSettings } from './settings';
-import { IFileSystem, IKeyValueStorage } from './ui/interfaces';
+import { IFileSystem, IKeyValueStorage } from './vscode/interfaces';
 import { FakeStorage, FakeFileSystemWatcher } from './__test__/fakes';
 
 vi.mock('os', () => {

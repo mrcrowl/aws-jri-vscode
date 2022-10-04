@@ -2,7 +2,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { Disposable, FileSystemWatcher } from 'vscode';
 import { ISettings } from './pick';
-import { IFileSystem, IKeyValueStorage } from './ui/interfaces';
+import { IFileSystem, IKeyValueStorage } from './vscode/interfaces';
 
 export const PROFILE_KEY = 'profile';
 

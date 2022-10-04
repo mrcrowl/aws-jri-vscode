@@ -5,7 +5,7 @@ import { assertIsErrorLike, ErrorLike } from './error';
 import { Resource, ResourceType } from './resource';
 import { partition } from './tools/array';
 import { defer } from './tools/async';
-import { FakeThemeIcon, SeparatorItem } from './ui/interfaces';
+import { FakeThemeIcon, SeparatorItem } from './vscode/interfaces';
 
 export interface IPickUI {
   showErrorMessage(message: string): Promise<void>;

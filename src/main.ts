@@ -17,11 +17,11 @@ import { IResourceMRU, ISettings, pick } from './pick';
 import { chooseProfile, ensureProfile, IProfileUI } from './profile';
 import { ResourceType } from './resource';
 import { StoredSettings } from './settings';
-import { IKeyValueStorage, IUIFactory } from './ui/interfaces';
-import { NodeFileSystem } from './ui/NodeFileSystem';
-import { VSCodeContextStorage } from './ui/VSCodeExtensionContext';
-import { VSCodePickUI } from './ui/VSCodePickUI';
-import { VSCodeProfileUI } from './ui/VSCodeProfileUI';
+import { IKeyValueStorage, IUIFactory } from './vscode/interfaces';
+import { NodeFileSystem } from './vscode/NodeFileSystem';
+import { VSCodeContextStorage } from './vscode/VSCodeExtensionContext';
+import { VSCodePickUI } from './vscode/VSCodePickUI';
+import { VSCodeProfileUI } from './vscode/VSCodeProfileUI';
 
 export function activate(context: ExtensionContext) {
   const storage: IKeyValueStorage = new VSCodeContextStorage(context);

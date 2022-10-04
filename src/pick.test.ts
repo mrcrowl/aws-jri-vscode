@@ -5,7 +5,7 @@ import { MRU } from './mru';
 import { IPickUI, ISettings, pick, PickParams, ResourceLoadOptions, VariousQuickPickItem } from './pick';
 import { Resource } from './resource';
 import { sleep } from './tools/async';
-import { SeparatorItem } from './ui/interfaces';
+import { SeparatorItem } from './vscode/interfaces';
 import { FakeQuickPick, FakeStorage } from './__test__/fakes';
 
 const RESOURCES = makeResources('A', 'B', 'C', 'D');
