@@ -92,7 +92,7 @@ class ParameterStoreValueRepository implements IValueRepository {
   }
 
   async retrieveValue(): Promise<string | undefined> {
-    const response = await this.client.send(new ssm.GetParameterCommand({ Name: this.id }));
+    const response = await this.client.send(new ssm.GetParameterCommand({ Name: this.id, WithDecryption: true }));
     return response.Parameter?.Value;
   }
 
