@@ -310,15 +310,20 @@ function sortByResourceName(a: Resource, b: Resource): number {
 }
 
 export function makeQuickPickAuthHooks(picker: QuickPick<QuickPickItem>): IAuthHooks {
+  let oldPlaceholder = picker.placeholder;
+
   return {
     onAttempt() {
       picker.ignoreFocusOut = true;
+      picker.placeholder = 'Waiting for login via SSO (external browser) ...';
     },
     onSuccess() {
       picker.ignoreFocusOut = false;
+      picker.placeholder = oldPlaceholder;
     },
     onFailure(_: ErrorLike) {
       picker.ignoreFocusOut = false;
+      picker.placeholder = oldPlaceholder;
     },
   };
 }
