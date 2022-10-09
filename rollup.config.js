@@ -1,6 +1,8 @@
 //@ts-check
-import nodeExternals from 'rollup-plugin-node-externals';
+import jsonPlugin from '@rollup/plugin-json';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 import esbuild from 'rollup-plugin-esbuild';
+import nodeExternals from 'rollup-plugin-node-externals';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -15,12 +17,12 @@ const config = {
   external: ['vscode'],
 
   plugins: [
-    nodeExternals(),
     esbuild({
       sourceMap: true,
       minify: process.env.NODE_ENV === 'production',
       target: 'ES2022',
     }),
+    ...(isProduction ? [nodeResolve(), jsonPlugin()] : [nodeExternals({})]),
   ],
 };
 
