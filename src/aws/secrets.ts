@@ -21,12 +21,12 @@ export async function showSecrets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, 
       settings,
       loadResources: getSecrets,
       onSelected: (secret: Resource) => {
-        const readerWriter = new SecretsManagerValueRepository(secret.name, 'ap-southeast-2');
+        const repo = new SecretsManagerValueRepository(secret.name, 'ap-southeast-2');
 
         return showViewAndEditMenu({
           kind: 'secret',
           resource: secret,
-          valueRepository: readerWriter,
+          valueRepository: repo,
           settings,
           uiFactory,
         });
@@ -65,6 +65,11 @@ class SecretsManagerValueRepository implements IValueRepository {
 
   constructor(private readonly id: string, readonly region: string) {
     this.client = new secrets.SecretsManagerClient({ region });
+  }
+
+  async createValue(name: string, value: string): Promise<void> {
+    const put = new secrets.PutSecretValueCommand({ SecretId: name, SecretString: value });
+    await this.client.send(put);
   }
 
   async retrieveValue(): Promise<string | undefined> {

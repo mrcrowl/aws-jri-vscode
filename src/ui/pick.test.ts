@@ -89,7 +89,7 @@ describe('pick', () => {
     const _ = pick(params);
 
     await sleep(0);
-    quickPick.fakeTypeFilterText('@prod');
+    quickPick.typeFilterText('@prod');
     await sleep(0);
     const [firstItem, ...rest] = quickPick.items;
     expect(firstItem.label).toBe('@prod');

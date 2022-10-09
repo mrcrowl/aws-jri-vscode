@@ -7,11 +7,13 @@ export interface IInputUI {
 
 export type InputParams = {
   initialValue?: string;
+  title?: string;
   placeholder?: string;
   uiFactory: IUIFactory;
-  validate: (value: string) => string | undefined;
+  validate?: (value: string) => string | undefined;
+  step?: { step: number; totalSteps: number };
 };
-export function showInputBoxWithJSONValidation({ initialValue = '', placeholder, uiFactory, validate }: InputParams) {
+export function input({ initialValue = '', placeholder, uiFactory, validate, step, title }: InputParams) {
   const ui = uiFactory.makeInputUI();
 
   return new Promise<string | void>(resolve => {
@@ -20,13 +22,18 @@ export function showInputBoxWithJSONValidation({ initialValue = '', placeholder,
     input.ignoreFocusOut = true;
     input.value = initialValue;
     input.placeholder = placeholder;
-    input.show();
+    (input.title = title), input.show();
     input.onDidAccept(onDidAccept, undefined, disposables);
     input.onDidHide(onDidHide, undefined, disposables);
     input.onDidChangeValue(onDidChangeValue, undefined, disposables);
 
+    if (step) {
+      input.step = step.step;
+      input.totalSteps = step.totalSteps;
+    }
+
     function getValidationMessage(value: string): string | undefined {
-      return validate(value);
+      return validate?.(value);
     }
 
     function onDidChangeValue(value: string) {

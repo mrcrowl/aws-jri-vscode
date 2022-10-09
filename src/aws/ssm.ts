@@ -3,6 +3,7 @@ import { window } from 'vscode';
 import { MRUFactoryFn } from '../model/mru';
 import { Resource } from '../model/resource';
 import { assertIsErrorLike } from '../tools/error';
+import { createNameValuePair } from '../ui/create';
 import { ISettings, IUIFactory } from '../ui/interfaces';
 import { pick } from '../ui/pick';
 import { ensureProfile } from '../ui/profile';
@@ -22,17 +23,28 @@ export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactor
       settings,
       mru: makeMRU('parameter'),
       onSelected: (parameter: Resource) => {
-        const readerWriter = new ParameterStoreValueRepository(parameter.name, 'ap-southeast-2');
+        const repository = new ParameterStoreValueRepository(parameter.name, 'ap-southeast-2');
 
         return showViewAndEditMenu({
           kind: 'parameter',
           resource: parameter,
           settings,
           uiFactory,
-          valueRepository: readerWriter,
+          valueRepository: repository,
         });
       },
-      onUnmatched: async (text: string) => {},
+      onUnmatched: async (text: string) => {
+        const repository = new ParameterStoreValueRepository(undefined, 'ap-southeast-2');
+
+        await createNameValuePair({
+          kind: 'parameter',
+          initialValue: text,
+          uiFactory,
+          valueRepository: repository,
+        });
+
+        return { finished: true };
+      },
     });
   } catch (e) {
     assertIsErrorLike(e);
@@ -65,8 +77,12 @@ const getParameters = makeResourceLoader<ssm.SSMClient, ssm.Parameter>({
 class ParameterStoreValueRepository implements IValueRepository {
   private readonly client: ssm.SSMClient;
 
-  constructor(private readonly id: string, readonly region: string) {
+  constructor(private readonly id: string | undefined, readonly region: string) {
     this.client = new ssm.SSMClient({ region });
+  }
+
+  async createValue(_name: string, _value: string): Promise<void> {
+    return;
   }
 
   async retrieveValue(): Promise<string | undefined> {

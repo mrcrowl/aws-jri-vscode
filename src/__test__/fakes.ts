@@ -2,6 +2,7 @@ import type {
   Disposable,
   Event,
   FileSystemWatcher,
+  InputBox,
   QuickInputButton,
   QuickPick,
   QuickPickItemButtonEvent,
@@ -72,6 +73,46 @@ function makeFakeEvent<T = void>() {
   return [event, trigger] as const;
 }
 
+export class FakeInputBox implements InputBox {
+  value: string = '';
+  placeholder: string | undefined;
+  password: boolean = false;
+  buttons: readonly QuickInputButton[] = [];
+  prompt: string | undefined;
+  validationMessage: string | undefined;
+  title: string | undefined;
+  step: number | undefined;
+  totalSteps: number | undefined;
+  enabled: boolean = false;
+  busy: boolean = false;
+  ignoreFocusOut: boolean = false;
+
+  show(): void {}
+  hide(): void {}
+  dispose = () => {};
+
+  onDidHide: Event<void>;
+  onDidChangeValue: Event<string>;
+  onDidAccept: Event<void>;
+  onDidTriggerButton: Event<QuickInputButton>;
+  fireDidAccept: () => void;
+  fireDidTriggerButton: (e: QuickInputButton) => void;
+  private fireDidChangeValue: (e: string) => void;
+  fireDidHide: (e: void) => void;
+
+  typeText(text: string) {
+    this.value = text;
+    this.fireDidChangeValue(text);
+  }
+
+  constructor() {
+    [this.onDidAccept, this.fireDidAccept] = makeFakeEvent();
+    [this.onDidTriggerButton, this.fireDidTriggerButton] = makeFakeEvent();
+    [this.onDidChangeValue, this.fireDidChangeValue] = makeFakeEvent();
+    [this.onDidHide, this.fireDidHide] = makeFakeEvent();
+  }
+}
+
 export class FakeQuickPick implements QuickPick<VariousQuickPickItem> {
   // Props.
   activeItems: readonly VariousQuickPickItem[] = [];
@@ -127,7 +168,7 @@ export class FakeQuickPick implements QuickPick<VariousQuickPickItem> {
     this.selectedItems = [];
   }
 
-  fakeTypeFilterText(text: string) {
+  typeFilterText(text: string) {
     this.value = text;
     this.fireDidChangeValue(text);
   }

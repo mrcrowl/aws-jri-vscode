@@ -3,7 +3,7 @@ import { Resource } from '../model/resource';
 import { toSentenceCase } from '../tools/case';
 import { assertIsErrorLike } from '../tools/error';
 import { MessageTypes } from '../vscode/VSCodeViewAndEditUI';
-import { showInputBoxWithJSONValidation } from './input-box';
+import { input } from './input';
 import { ISettings, IUIFactory } from './interfaces';
 
 interface ActionItem extends QuickPickItem {
@@ -11,6 +11,7 @@ interface ActionItem extends QuickPickItem {
 }
 
 export interface IValueRepository {
+  createValue(name: string, value: string): Promise<void>;
   retrieveValue(): Promise<string | undefined>;
   updateValue(value: string): Promise<void>;
 }
@@ -134,7 +135,7 @@ export async function showViewAndEditMenu({
     }
 
     async function editValue(value: string | undefined): Promise<{ finished: boolean }> {
-      const editedValue = await showInputBoxWithJSONValidation({
+      const editedValue = await input({
         initialValue: value,
         placeholder: toSentenceCase(`${kind} value`),
         validate: validateJSON,

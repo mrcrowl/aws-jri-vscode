@@ -1,5 +1,5 @@
 import { FileSystemWatcher, QuickPickItem, ThemeIcon } from 'vscode';
-import { IInputUI } from './input-box';
+import { IInputUI } from './input';
 import { IPickUI } from './pick';
 import { IProfileUI } from './profile';
 import { IViewAndEditUI } from './view-and-edit-menu';

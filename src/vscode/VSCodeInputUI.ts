@@ -1,5 +1,5 @@
 import { InputBox, window } from 'vscode';
-import { IInputUI } from '../ui/input-box';
+import { IInputUI } from '../ui/input';
 
 export class VSCodeInputUI implements IInputUI {
   createInputBox(): InputBox {

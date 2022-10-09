@@ -120,7 +120,7 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
   const disposables: Disposable[] = [];
   const dispose = () => disposables.forEach(d => d.dispose());
   const CREATE_ITEM: CreateResourceQuickPickItem = {
-    label: `$(plus) Create new ${resourceType} ...`,
+    label: `$(plus) Create new ${resourceType} @${params.settings.profile}...`,
     variant: 'resource:create',
     alwaysShow: true,
   };
