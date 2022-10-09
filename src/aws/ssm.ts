@@ -27,14 +27,12 @@ export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactor
         return showViewAndEditMenu({
           kind: 'parameter',
           resource: parameter,
-          valueRepository: readerWriter,
           settings,
+          uiFactory,
+          valueRepository: readerWriter,
         });
       },
-      onUnmatched: async (text: string) => {
-        console.log(`hello: ${text}`);
-        return { finished: true };
-      },
+      onUnmatched: async (text: string) => {},
     });
   } catch (e) {
     assertIsErrorLike(e);

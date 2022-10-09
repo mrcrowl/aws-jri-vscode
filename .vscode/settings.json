@@ -15,8 +15,8 @@
   "goToTest.testFolder": ".",
   "terminal.integrated.persistentSessionReviveProcess": "never",
   "terminal.integrated.enablePersistentSessions": false,
-  "testing.automaticallyOpenPeekView": "never",
   "editor.codeActionsOnSave": {
     "source.organizeImports": true
-  }
+  },
+  "testing.automaticallyOpenPeekView": "never"
 }

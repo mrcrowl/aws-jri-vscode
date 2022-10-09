@@ -1,11 +1,11 @@
-import { anyString, instance, mock, reset, verify, when } from 'ts-mockito';
+import { instance, mock, verify, when } from 'ts-mockito';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MaybeCacheArray } from '../aws/common/cache';
-import { MRU } from '../model/mru';
 import { Resource } from '../model/resource';
 import { sleep } from '../tools/async';
-import { FakeQuickPick, FakeStorage } from '../__test__/fakes';
-import { ISettings, SeparatorItem } from './interfaces';
+import { FakeQuickPick } from '../__test__/fakes';
+import { CommonDependencies, setupCommonDependencies } from '../__test__/setups';
+import { SeparatorItem } from './interfaces';
 import { IPickUI, pick, PickParams, ResourceLoadOptions, VariousQuickPickItem } from './pick';
 
 const RESOURCES = makeResources('A', 'B', 'C', 'D');
@@ -20,40 +20,26 @@ const mockLoadResourcesFn = vi.fn().mockImplementation(async ({ skipCache }: Res
 
 describe('pick', () => {
   const ui = mock<IPickUI>();
-  const settings = mock<ISettings>();
 
-  let storage: FakeStorage;
-  let mru: MRU;
-  let picker: FakeQuickPick;
-  let profile: string;
+  const deps: CommonDependencies = setupCommonDependencies('ASG');
+  let quickPick: FakeQuickPick;
 
   beforeEach(async () => {
     // Reset.
     vi.clearAllMocks();
-    reset(ui);
-    reset(settings);
+    deps.reset();
 
     // UI.
     when(ui.separator).thenReturn(SEPARATOR);
 
-    // Settings.
-    profile = 'dev';
-    when(settings.profile).thenCall(() => profile);
-    when(settings.setProfile(anyString())).thenCall(nextProfile => (profile = nextProfile));
-    when(settings.isProfileName(anyString())).thenCall(profile => ['dev', 'test', 'prod'].includes(profile));
-
     // UI: createQuickPick() --> picker
-    picker = new FakeQuickPick();
-    when(ui.createQuickPick()).thenReturn(picker);
-
-    // Storage & MRU
-    storage = new FakeStorage();
-    mru = new MRU(storage, 'ASG');
+    quickPick = new FakeQuickPick();
+    when(ui.createQuickPick()).thenReturn(quickPick);
   });
 
   it('basic selection', async () => {
     // Assert: "B" is not recent before.
-    expect(mru.isRecentUrl(RESOURCE_B.url)).toBe(false);
+    expect(deps.mru.isRecentUrl(RESOURCE_B.url)).toBe(false);
 
     // Act: Basic picker.
     const params = makeParams();
@@ -61,18 +47,18 @@ describe('pick', () => {
 
     // Act: Select "B".
     await sleep(0);
-    picker.fakeSelectResourceWithUrl(RESOURCE_B.url);
+    quickPick.fakeSelectResourceWithUrl(RESOURCE_B.url);
     await sleep(0);
 
     // Assert: "B" became a recent URL.
-    expect(mru.isRecentUrl(RESOURCE_B.url)).toBe(true);
+    expect(deps.mru.isRecentUrl(RESOURCE_B.url)).toBe(true);
 
     // Assert: result returns "B".
     const result = await promise;
     expect(result?.url).toBe(RESOURCE_B.url);
 
     // Assert: no longer busy.
-    expect(picker.busy).toBe(false);
+    expect(quickPick.busy).toBe(false);
 
     // Assert: loadResources called twice [use cache, skip cache].
     expect(mockLoadResourcesFn).toHaveBeenCalledTimes(2);
@@ -82,30 +68,30 @@ describe('pick', () => {
   });
 
   it('sequences items by MRU', async () => {
-    await mru.notifyUrlSelected(RESOURCE_C.url);
+    await deps.mru.notifyUrlSelected(RESOURCE_C.url);
 
-    const params = makeParams();
+    const params: PickParams = makeParams();
     void pick(params);
     await sleep(0);
 
-    expect(picker.itemResources).toMatchObject([
+    expect(quickPick.itemResources).toMatchObject([
       RESOURCE_C, //
       RESOURCE_A,
       RESOURCE_B,
       RESOURCE_D,
     ]);
 
-    expect(picker.fakeNumRecentItems).toBe(1);
+    expect(quickPick.fakeNumRecentItems).toBe(1);
   });
 
   it('typing a profile name moves it to the top', async () => {
-    const params = makeParams();
+    const params: PickParams = makeParams();
     const _ = pick(params);
 
     await sleep(0);
-    picker.fakeTypeFilterText('@prod');
+    quickPick.fakeTypeFilterText('@prod');
     await sleep(0);
-    const [firstItem, ...rest] = picker.items;
+    const [firstItem, ...rest] = quickPick.items;
     expect(firstItem.label).toBe('@prod');
     expect(firstItem.description).toBe('Switch to prod profile');
 
@@ -114,11 +100,11 @@ describe('pick', () => {
       .every(item => item.variant === 'resource:select');
     expect(restAreResources).toBe(true);
 
-    picker.selectedItems = [firstItem];
-    picker.fireDidAccept();
+    quickPick.selectedItems = [firstItem];
+    quickPick.fireDidAccept();
     await sleep(0);
 
-    verify(settings.setProfile('prod')).once();
+    verify(deps.mockSettings.setProfile('prod')).once();
 
     // Assert: loadResources called twice [use cache, skip cache].
     expect(mockLoadResourcesFn).toHaveBeenCalledTimes(4);
@@ -145,7 +131,7 @@ describe('pick', () => {
 
     await sleep(0);
 
-    lastItem = picker.items[picker.items.length - 1];
+    lastItem = quickPick.items[quickPick.items.length - 1];
     expect(lastItem?.label).toMatch(/Create new/);
   });
 
@@ -154,9 +140,9 @@ describe('pick', () => {
       ui: instance(ui),
       resourceType: 'ASG',
       region: 'ap-southeast-2',
-      settings: instance(settings),
+      settings: deps.settings,
+      mru: deps.mru,
       loadResources: mockLoadResourcesFn,
-      mru,
       ...adjustments,
     };
     return params;

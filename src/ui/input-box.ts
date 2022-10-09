@@ -1,10 +1,22 @@
-import { Disposable, window } from 'vscode';
-import { assertIsErrorLike } from '../tools/error';
+import type { Disposable, InputBox } from 'vscode';
+import { IUIFactory } from './interfaces';
 
-export function showInputBoxWithJSONValidation(initialValue: string = '', placeholder?: string) {
+export interface IInputUI {
+  createInputBox(): InputBox;
+}
+
+export type InputParams = {
+  initialValue?: string;
+  placeholder?: string;
+  uiFactory: IUIFactory;
+  validate: (value: string) => string | undefined;
+};
+export function showInputBoxWithJSONValidation({ initialValue = '', placeholder, uiFactory, validate }: InputParams) {
+  const ui = uiFactory.makeInputUI();
+
   return new Promise<string | void>(resolve => {
     const disposables: Disposable[] = [];
-    const input = window.createInputBox();
+    const input = ui.createInputBox();
     input.ignoreFocusOut = true;
     input.value = initialValue;
     input.placeholder = placeholder;
@@ -14,16 +26,7 @@ export function showInputBoxWithJSONValidation(initialValue: string = '', placeh
     input.onDidChangeValue(onDidChangeValue, undefined, disposables);
 
     function getValidationMessage(value: string): string | undefined {
-      if (value.trimStart().startsWith('{')) {
-        try {
-          JSON.parse(value);
-        } catch (e) {
-          assertIsErrorLike(e);
-          return `Invalid JSON: ${e.message}`;
-        }
-      }
-
-      return undefined;
+      return validate(value);
     }
 
     function onDidChangeValue(value: string) {

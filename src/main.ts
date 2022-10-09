@@ -20,8 +20,10 @@ import { IResourceMRU, pick } from './ui/pick';
 import { chooseProfile, ensureProfile, IProfileUI } from './ui/profile';
 import { NodeFileSystem } from './vscode/NodeFileSystem';
 import { VSCodeContextStorage } from './vscode/VSCodeExtensionContext';
+import { VSCodeInputUI } from './vscode/VSCodeInputUI';
 import { VSCodePickUI } from './vscode/VSCodePickUI';
 import { VSCodeProfileUI } from './vscode/VSCodeProfileUI';
+import { VSCodeViewAndEditUI } from './vscode/VSCodeViewAndEditUI';
 
 export function activate(context: ExtensionContext) {
   const storage: IKeyValueStorage = new VSCodeContextStorage(context);
@@ -30,6 +32,8 @@ export function activate(context: ExtensionContext) {
   const uiFactory: IUIFactory = {
     makeProfileUI: () => new VSCodeProfileUI(),
     makePickUI: () => new VSCodePickUI(),
+    makeInputUI: () => new VSCodeInputUI(),
+    makeViewAndEditUI: () => new VSCodeViewAndEditUI(),
   };
 
   context.subscriptions.push(

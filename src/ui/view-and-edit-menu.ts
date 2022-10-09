@@ -1,10 +1,10 @@
-import { Disposable, env, ProgressLocation, QuickPickItem, Uri, window } from 'vscode';
+import type { Disposable, QuickPick, QuickPickItem } from 'vscode';
 import { Resource } from '../model/resource';
-import { sleep } from '../tools/async';
 import { toSentenceCase } from '../tools/case';
 import { assertIsErrorLike } from '../tools/error';
+import { MessageTypes } from '../vscode/VSCodeViewAndEditUI';
 import { showInputBoxWithJSONValidation } from './input-box';
-import { ISettings } from './interfaces';
+import { ISettings, IUIFactory } from './interfaces';
 
 interface ActionItem extends QuickPickItem {
   readonly action: (item: ActionItem) => { finished: boolean } | PromiseLike<{ finished: boolean }>;
@@ -15,19 +15,30 @@ export interface IValueRepository {
   updateValue(value: string): Promise<void>;
 }
 
+export interface IViewAndEditUI {
+  createQuickPick<T extends QuickPickItem>(): QuickPick<T>;
+  showMessage(message: string, type?: MessageTypes): Promise<void>;
+  copyToClipboard(text: string): Promise<void>;
+  openUrl(url: string): Promise<boolean>;
+  withProgress(title: string, action: () => Promise<void>): Promise<void>;
+}
+
 type ShowSecretMenuParams = {
   resource: Resource;
   settings: ISettings;
   kind: 'secret' | 'parameter';
   valueRepository: IValueRepository;
+  uiFactory: IUIFactory;
 };
 export async function showViewAndEditMenu({
   resource,
   settings: _,
   kind,
   valueRepository: valueCRUD,
+  uiFactory,
 }: ShowSecretMenuParams): Promise<{ finished: boolean }> {
-  const picker = window.createQuickPick<ActionItem>();
+  const ui = uiFactory.makeViewAndEditUI();
+  const picker = ui.createQuickPick<ActionItem>();
   picker.busy = true;
 
   return new Promise(async resolve => {
@@ -123,45 +134,51 @@ export async function showViewAndEditMenu({
     }
 
     async function editValue(value: string | undefined): Promise<{ finished: boolean }> {
-      const editedValue = await showInputBoxWithJSONValidation(value, toSentenceCase(`${kind} value`));
+      const editedValue = await showInputBoxWithJSONValidation({
+        initialValue: value,
+        placeholder: toSentenceCase(`${kind} value`),
+        validate: validateJSON,
+        uiFactory,
+      });
       if (!editedValue) return { finished: false }; // Cancelled?
 
       try {
-        await window.withProgress(
-          {
-            location: ProgressLocation.Notification,
-            title: `Saving ${kind}: ${resource.name}`,
-          },
-          async progress => {
-            progress.report({ increment: 0, message: '...' });
-            await valueCRUD.updateValue(editedValue);
-            progress.report({ increment: 100, message: '✅' });
-            await sleep(1500);
-            progress.report({ increment: 100 });
-          },
-        );
+        await ui.withProgress(`Saving ${kind}: ${resource.name}`, () => valueCRUD.updateValue(editedValue));
         return { finished: true };
       } catch (e) {
         assertIsErrorLike(e);
-        await window.showErrorMessage(`Failed to store ${kind}: ${e.message}`);
+        await ui.showMessage(`Failed to store ${kind}: ${e.message}`, 'error');
         return { finished: false };
       }
     }
 
     async function copyToClipAndNotify(description: string | undefined, what: string): Promise<{ finished: boolean }> {
       if (description) {
-        await env.clipboard.writeText(description);
-        window.showInformationMessage(`Copied ${what} to clipboard`);
+        await ui.copyToClipboard(description);
+        await ui.showMessage(`Copied ${what} to clipboard`);
         return { finished: true };
       } else {
-        window.showWarningMessage('Nothing to copy');
+        await ui.showMessage('Nothing to copy', 'warn');
         return { finished: false };
       }
     }
   });
 
   async function showURL(url: string): Promise<{ finished: boolean }> {
-    await env.openExternal(Uri.parse(url));
+    await ui.openUrl(url);
     return { finished: true };
   }
+}
+
+function validateJSON(value: string): string | undefined {
+  if (value.trimStart().startsWith('{')) {
+    try {
+      JSON.parse(value);
+    } catch (e) {
+      assertIsErrorLike(e);
+      return `Invalid JSON: ${e.message}`;
+    }
+  }
+
+  return undefined;
 }

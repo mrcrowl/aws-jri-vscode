@@ -28,6 +28,7 @@ export async function showSecrets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, 
           resource: secret,
           valueRepository: readerWriter,
           settings,
+          uiFactory,
         });
       },
     });
