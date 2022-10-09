@@ -13,10 +13,17 @@ export type InputParams = {
   validate?: (value: string) => string | undefined;
   step?: { step: number; totalSteps: number };
 };
-export function input({ initialValue = '', placeholder, uiFactory, validate, step, title }: InputParams) {
+export function input({
+  initialValue = '',
+  placeholder,
+  uiFactory,
+  validate,
+  step,
+  title,
+}: InputParams): Promise<string | undefined> {
   const ui = uiFactory.makeInputUI();
 
-  return new Promise<string | void>(resolve => {
+  return new Promise<string | undefined>(resolve => {
     const disposables: Disposable[] = [];
     const input = ui.createInputBox();
     input.ignoreFocusOut = true;
@@ -53,7 +60,7 @@ export function input({ initialValue = '', placeholder, uiFactory, validate, ste
     }
 
     function onDidHide() {
-      if (dispose()) resolve();
+      if (dispose()) resolve(undefined);
     }
 
     function dispose(): boolean {

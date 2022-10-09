@@ -2,23 +2,27 @@ import type { Disposable, QuickPick, QuickPickItem } from 'vscode';
 import { Resource } from '../model/resource';
 import { toSentenceCase } from '../tools/case';
 import { assertIsErrorLike } from '../tools/error';
-import { MessageTypes } from '../vscode/VSCodeViewAndEditUI';
 import { input } from './input';
-import { ISettings, IUIFactory } from './interfaces';
+import { ISettings, IUIFactory, MessageTypes } from './interfaces';
 
 interface ActionItem extends QuickPickItem {
   readonly action: (item: ActionItem) => { finished: boolean } | PromiseLike<{ finished: boolean }>;
 }
 
+export enum NameValueSecrecy {
+  secret,
+  notSecret,
+}
+
 export interface IValueRepository {
-  createValue(name: string, value: string): Promise<void>;
+  createValue(name: string, value: string, secrecy: NameValueSecrecy): Promise<void>;
   retrieveValue(): Promise<string | undefined>;
   updateValue(value: string): Promise<void>;
 }
 
 export interface IViewAndEditUI {
   createQuickPick<T extends QuickPickItem>(): QuickPick<T>;
-  showMessage(message: string, type?: MessageTypes): Promise<void>;
+  showMessage(type: MessageTypes, message: string): Promise<void>;
   copyToClipboard(text: string): Promise<void>;
   openUrl(url: string): Promise<boolean>;
   withProgress(title: string, action: () => Promise<void>): Promise<void>;
@@ -148,7 +152,7 @@ export async function showViewAndEditMenu({
         return { finished: true };
       } catch (e) {
         assertIsErrorLike(e);
-        await ui.showMessage(`Failed to store ${kind}: ${e.message}`, 'error');
+        await ui.showMessage(MessageTypes.error, `Failed to store ${kind}: ${e.message}`);
         return { finished: false };
       }
     }
@@ -156,10 +160,10 @@ export async function showViewAndEditMenu({
     async function copyToClipAndNotify(description: string | undefined, what: string): Promise<{ finished: boolean }> {
       if (description) {
         await ui.copyToClipboard(description);
-        await ui.showMessage(`Copied ${what} to clipboard`);
+        await ui.showMessage(MessageTypes.info, `Copied ${what} to clipboard`);
         return { finished: true };
       } else {
-        await ui.showMessage('Nothing to copy', 'warn');
+        await ui.showMessage(MessageTypes.warn, 'Nothing to copy');
         return { finished: false };
       }
     }

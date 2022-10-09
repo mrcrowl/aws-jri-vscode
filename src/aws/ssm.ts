@@ -1,13 +1,14 @@
 import * as ssm from '@aws-sdk/client-ssm';
+import { ParameterType } from '@aws-sdk/client-ssm';
 import { window } from 'vscode';
 import { MRUFactoryFn } from '../model/mru';
 import { Resource } from '../model/resource';
 import { assertIsErrorLike } from '../tools/error';
-import { createNameValuePair } from '../ui/create';
+import { createSSMParameter } from '../ui/create';
 import { ISettings, IUIFactory } from '../ui/interfaces';
 import { pick } from '../ui/pick';
 import { ensureProfile } from '../ui/profile';
-import { IValueRepository, showViewAndEditMenu } from '../ui/view-and-edit-menu';
+import { IValueRepository, NameValueSecrecy, showViewAndEditMenu } from '../ui/view-and-edit-menu';
 import { makeResourceLoader } from './common/loader';
 
 export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
@@ -36,9 +37,8 @@ export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactor
       onUnmatched: async (text: string) => {
         const repository = new ParameterStoreValueRepository(undefined, 'ap-southeast-2');
 
-        await createNameValuePair({
-          kind: 'parameter',
-          initialValue: text,
+        await createSSMParameter({
+          initialName: text,
           uiFactory,
           valueRepository: repository,
         });
@@ -81,8 +81,14 @@ class ParameterStoreValueRepository implements IValueRepository {
     this.client = new ssm.SSMClient({ region });
   }
 
-  async createValue(_name: string, _value: string): Promise<void> {
-    return;
+  async createValue(name: string, value: string, secrecy: NameValueSecrecy): Promise<void> {
+    const put = new ssm.PutParameterCommand({
+      Name: name,
+      Value: value,
+      Type: secrecy === NameValueSecrecy.secret ? ParameterType.SECURE_STRING : ParameterType.STRING,
+      Overwrite: false,
+    });
+    await this.client.send(put);
   }
 
   async retrieveValue(): Promise<string | undefined> {

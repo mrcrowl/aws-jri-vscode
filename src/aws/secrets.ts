@@ -6,7 +6,11 @@ import { assertIsErrorLike } from '../tools/error';
 import { ISettings, IUIFactory } from '../ui/interfaces';
 import { pick } from '../ui/pick';
 import { ensureProfile } from '../ui/profile';
-import { IValueRepository, showViewAndEditMenu } from '../ui/view-and-edit-menu';
+import {
+  IValueRepository,
+  NameValueSecrecy as NameValueSecrecyType,
+  showViewAndEditMenu,
+} from '../ui/view-and-edit-menu';
 import { makeResourceLoader } from './common/loader';
 
 export async function showSecrets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
@@ -67,9 +71,9 @@ class SecretsManagerValueRepository implements IValueRepository {
     this.client = new secrets.SecretsManagerClient({ region });
   }
 
-  async createValue(name: string, value: string): Promise<void> {
-    const put = new secrets.PutSecretValueCommand({ SecretId: name, SecretString: value });
-    await this.client.send(put);
+  async createValue(_name: string, _value: string, _secrecy: NameValueSecrecyType): Promise<void> {
+    // const put = new secrets.PutSecretValueCommand({ SecretId: name, SecretString: value });
+    // await this.client.send(put);
   }
 
   async retrieveValue(): Promise<string | undefined> {

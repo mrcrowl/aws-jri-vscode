@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { sleep } from '../tools/async';
 import { FakeInputBox } from '../__test__/fakes';
 import { CommonDependencies, setupCommonDependencies } from '../__test__/setups';
-import { createNameValuePair } from './create';
+import { createSSMParameter } from './create';
 import { IInputUI } from './input';
 import { IValueRepository } from './view-and-edit-menu';
 
@@ -25,8 +25,7 @@ describe('create', () => {
   });
 
   it('shows step 1/2 with empty initial value', async () => {
-    void createNameValuePair({
-      kind: 'parameter',
+    void createSSMParameter({
       uiFactory: deps.uiFactory,
       valueRepository: instance(mockRepository),
     });
@@ -40,10 +39,9 @@ describe('create', () => {
   });
 
   it('defaults to provided text', async () => {
-    void createNameValuePair({
-      kind: 'parameter',
+    void createSSMParameter({
       uiFactory: deps.uiFactory,
-      initialValue: 'hello/world',
+      initialName: 'hello/world',
       valueRepository: instance(mockRepository),
     });
     expect(inputBox.value).toBe('hello/world');
@@ -53,8 +51,7 @@ describe('create', () => {
   });
 
   it('shows validation message if name is blank', async () => {
-    void createNameValuePair({
-      kind: 'parameter',
+    void createSSMParameter({
       uiFactory: deps.uiFactory,
       valueRepository: instance(mockRepository),
     });
@@ -65,8 +62,7 @@ describe('create', () => {
   });
 
   it('shows step 2 when valid name is entered', async () => {
-    void createNameValuePair({
-      kind: 'parameter',
+    void createSSMParameter({
       uiFactory: deps.uiFactory,
       valueRepository: instance(mockRepository),
     });
@@ -78,8 +74,7 @@ describe('create', () => {
   });
 
   it('reverts to step 1 when step 2 is cancelled', async () => {
-    void createNameValuePair({
-      kind: 'parameter',
+    void createSSMParameter({
       uiFactory: deps.uiFactory,
       valueRepository: instance(mockRepository),
     });
@@ -94,8 +89,7 @@ describe('create', () => {
   });
 
   it('resolves with finished: true if both steps are completed', async () => {
-    const vp = createNameValuePair({
-      kind: 'parameter',
+    const vp = createSSMParameter({
       uiFactory: deps.uiFactory,
       valueRepository: instance(mockRepository),
     });
@@ -112,8 +106,7 @@ describe('create', () => {
   });
 
   it('resolves with finished: false if step 1 is cancelled', async () => {
-    const vp = createNameValuePair({
-      kind: 'parameter',
+    const vp = createSSMParameter({
       uiFactory: deps.uiFactory,
       valueRepository: instance(mockRepository),
     });

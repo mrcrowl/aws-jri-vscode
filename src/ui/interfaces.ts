@@ -13,11 +13,25 @@ export interface ISettings {
   isProfileName(name: string): boolean;
   dispose(): void;
 }
+
+export enum MessageTypes {
+  'info',
+  'warn',
+  'error',
+}
+
 export interface IUIFactory {
   makeProfileUI(): IProfileUI;
   makePickUI(): IPickUI;
   makeInputUI(): IInputUI;
   makeViewAndEditUI(): IViewAndEditUI;
+  makeBasicUI(): IBasicUI;
+}
+
+export interface IBasicUI {
+  showMessage(type: MessageTypes, message: string): Promise<void>;
+  withProgress(title: string, action: () => Promise<void>): Promise<void>;
+  pickString(values: string[], placeHolder?: string, title?: string): Promise<string | undefined>;
 }
 
 export interface IKeyValueStorage {
