@@ -9,4 +9,3 @@ src/**
 **/.eslintrc.json
 **/*.map
 **/*.ts
-rollup.config.js

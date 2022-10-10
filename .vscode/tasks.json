@@ -2,11 +2,11 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "rollup: watch",
+      "label": "esbuild: watch",
       "group": "build",
       "type": "npm",
       "script": "watch",
-      "detail": "rollup -c rollup.config.js --watch",
+      "detail": "esbuild-base -- --sourcemap --watch",
       "runOptions": {
         "runOn": "folderOpen"
       },
@@ -23,8 +23,8 @@
         "base": "$tsc",
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "rollup ",
-          "endsPattern": "waiting for changes..."
+          "beginsPattern": "> esbuild ",
+          "endsPattern": "watching for changes..."
         }
       },
       "isBackground": true

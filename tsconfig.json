@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
+    "module": "ES2022",
     "moduleResolution": "node",
     "target": "ES2022",
     "lib": ["ES2022", "dom"],
@@ -13,5 +13,10 @@
     "noEmit": true,
     "importHelpers": true
   },
-  "include": ["./src/**/*.ts", "./node_modules/vscode/vscode.d.ts", "./node_modules/vscode/lib/*"]
+  "include": [
+    "./src/**/*.ts",
+    "./node_modules/vscode/vscode.d.ts",
+    "./node_modules/vscode/lib/*",
+    "./node_modules/fast-xml-parser/**/*.js"
+  ]
 }
