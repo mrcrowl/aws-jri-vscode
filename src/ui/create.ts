@@ -18,7 +18,7 @@ export async function createSSMParameter(params: CreateNameValuePairParams): Pro
   const { initialName, skipName, initialValue, uiFactory, valueRepository } = params;
 
   // Step 1: Name.
-  const name = skipName ? initialName : await inputName(initialName, 'parameter', uiFactory);
+  const name = (skipName ? initialName : await inputName(initialName, 'parameter', uiFactory))?.trim();
   if (name === undefined) {
     return { finished: false };
   }
@@ -74,7 +74,52 @@ async function inputName(
     title: `Create new ${target}`,
     step: { step: 1, totalSteps: 2 },
     uiFactory: uiFactory,
-    validate: value => (value.trim() === '' ? `${toSentenceCase(target)} name cannot be blank` : undefined),
+    validate: value => {
+      // Validate against the SSM Parameter Store rules, here:
+      // https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-su-create.html
+
+      const nameTrimmed = value.trim();
+
+      // Blank?
+      if (nameTrimmed === '') {
+        return `${toSentenceCase(target)} name cannot be blank`;
+      }
+
+      // Invalid characters?
+      if (/[^A-Z0-9_.\-/]/i.test(nameTrimmed)) {
+        return `${toSentenceCase(target)} can only contain: a-zA-Z0-9_.-/`;
+      }
+
+      // Contains slash, but doesn't start with slash?
+      if (nameTrimmed.includes('/') && !nameTrimmed.startsWith('/')) {
+        return `${toSentenceCase(target)} name must start with / if it includes any /'s`;
+      }
+
+      // Ends with slash?
+      if (nameTrimmed.endsWith('/')) {
+        return `${toSentenceCase(target)} cannot end with /`;
+      }
+
+      // Contains too many hierarchy levels?
+      const numSlashes = (nameTrimmed.match(/\//g) ?? []).length;
+      if (numSlashes > 15) {
+        return `${toSentenceCase(target)} has too many hierarchy levels`;
+      }
+
+      // Contains empty hierarchy levels?
+      if (/\/\//.test(nameTrimmed)) {
+        return `${toSentenceCase(target)} cannot have empty levels (//)`;
+      }
+
+      // Invalid prefix?
+      let prefixMatch: RegExpMatchArray | null;
+      // eslint-disable-next-line no-cond-assign
+      if ((prefixMatch = nameTrimmed.match(/^\s*(\/?(?:aws|ssm))/i))) {
+        return `${toSentenceCase(target)} cannot start with ${prefixMatch[1]}`;
+      }
+
+      return;
+    },
   });
 }
 

@@ -18,7 +18,8 @@
     "source.organizeImports": true
   },
   "testing.automaticallyOpenPeekView": "never",
-  "goToTest.srcFolder": "src",
+  "goToTest.srcFolder": ".",
   "goToTest.testFolder": ".",
+  "goToTest.testExtension": ".test.ts",
   "goToTest.pathType": "relative"
 }
