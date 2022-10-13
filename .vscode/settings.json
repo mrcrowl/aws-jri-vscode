@@ -17,9 +17,9 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": true
   },
-  "testing.automaticallyOpenPeekView": "never",
   "goToTest.srcFolder": ".",
   "goToTest.testFolder": ".",
   "goToTest.testExtension": ".test.ts",
-  "goToTest.pathType": "relative"
+  "goToTest.pathType": "relative",
+  "testing.automaticallyOpenPeekView": "never"
 }
