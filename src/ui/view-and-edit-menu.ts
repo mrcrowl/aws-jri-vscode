@@ -152,7 +152,7 @@ export async function showViewAndEditMenu({
         return { finished: true };
       } catch (e) {
         assertIsErrorLike(e);
-        await ui.showMessage(MessageTypes.error, `Failed to store ${kind}: ${e.message}`);
+        void ui.showMessage(MessageTypes.error, `Failed to store ${kind}: ${e.message}`);
         return { finished: false };
       }
     }
@@ -160,10 +160,10 @@ export async function showViewAndEditMenu({
     async function copyToClipAndNotify(description: string | undefined, what: string): Promise<{ finished: boolean }> {
       if (description) {
         await ui.copyToClipboard(description);
-        await ui.showMessage(MessageTypes.info, `Copied ${what} to clipboard`);
+        void ui.showMessage(MessageTypes.info, `Copied ${what} to clipboard`);
         return { finished: true };
       } else {
-        await ui.showMessage(MessageTypes.warn, 'Nothing to copy');
+        void ui.showMessage(MessageTypes.warn, 'Nothing to copy');
         return { finished: false };
       }
     }

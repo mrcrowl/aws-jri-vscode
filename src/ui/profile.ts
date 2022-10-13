@@ -21,12 +21,12 @@ export async function chooseProfile(ui: IProfileUI, settings: ISettings): Promis
   const configFilepath = settings.configFilepath;
   const profiles: string[] | undefined = settings.enumerateProfileNames();
   if (!profiles) {
-    await ui.showNoConfigFoundError(configFilepath);
+    void ui.showNoConfigFoundError(configFilepath);
     return undefined;
   }
 
   if (profiles.length === 0) {
-    await ui.showNoProfilesError(configFilepath);
+    void ui.showNoProfilesError(configFilepath);
     return undefined;
   }
 
