@@ -103,7 +103,7 @@ describe('createSSMParameter', () => {
       valueRepository: instance(mockValueRepository),
     });
     inputBox.typeText(example);
-    expect(inputBox.validationMessage).toMatch(/can only contain: a-zA-Z0-9_.-/);
+    expect(inputBox.validationMessage).toMatch(/can only contain: A-Z a-z 0-9 _.-\//);
     inputBox.typeText(GOOD_NAME);
     expect(inputBox.validationMessage).toBeUndefined();
   });

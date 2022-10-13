@@ -87,7 +87,7 @@ async function inputName(
 
       // Invalid characters?
       if (/[^A-Z0-9_.\-/]/i.test(nameTrimmed)) {
-        return `${toSentenceCase(target)} can only contain: a-zA-Z0-9_.-/`;
+        return `${toSentenceCase(target)} can only contain: A-Z a-z 0-9 _.-/`;
       }
 
       // Contains slash, but doesn't start with slash?
