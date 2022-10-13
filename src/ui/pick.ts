@@ -172,7 +172,7 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
           else await pick({ ...params, filterText: picker.value });
         } catch (e) {
           assertIsErrorLike(e);
-          await ui.showErrorMessage(`Unexpected error adding resource: ${e.message}`);
+          void ui.showErrorMessage(`Unexpected error adding resource: ${e.message}`);
           dispose();
         }
       }
@@ -194,7 +194,7 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
           else await pick({ ...params, activeItemURL: item.url, filterText: picker.value });
         } catch (e) {
           assertIsErrorLike(e);
-          await ui.showErrorMessage(`Unexpected error: ${e.message}`);
+          void ui.showErrorMessage(`Unexpected error: ${e.message}`);
           dispose();
         }
       } else {
