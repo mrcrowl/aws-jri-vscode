@@ -3,7 +3,7 @@
   "displayName": "Jump Right In: AWS",
   "publisher": "mrcrowl",
   "description": "Jump into common AWS actions.",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "icon": "icon-round.png",
   "engines": {
     "vscode": "^1.58.0"
