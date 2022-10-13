@@ -2,6 +2,7 @@ import { commands, ExtensionContext, window } from 'vscode';
 import * as autoscaling from './aws/autoscaling';
 import * as cloudformation from './aws/cloudformation';
 import * as cloudfront from './aws/cloudfront';
+import * as cloudwatch from './aws/cloudwatch';
 import * as dynamodb from './aws/dynamodb';
 import * as ec2 from './aws/ec2';
 import * as ecs from './aws/ecs';
@@ -45,6 +46,7 @@ export function activate(context: ExtensionContext) {
     commands.registerCommand('jri.cloudformationStacks', () =>
       showCloudFormationStacks(mruFactory, uiFactory, settings),
     ),
+    commands.registerCommand('jri.cloudwatchLogGroups', () => showCloudwatchLogGroups(mruFactory, uiFactory, settings)),
     commands.registerCommand('jri.ec2Instances', () => showEC2Instances(mruFactory, uiFactory, settings)),
     commands.registerCommand('jri.ec2AutoScalingGroups', () => showAutoscalingGroups(mruFactory, uiFactory, settings)),
     commands.registerCommand('jri.dynamoDBTables', () => showDynamoDBTables(mruFactory, uiFactory, settings)),
@@ -214,6 +216,24 @@ async function showDynamoDBTables(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, 
         resourceType: 'table',
         region: 'ap-southeast-2',
         loadResources: dynamodb.getTables,
+        mru: makeMRU('table'),
+        settings,
+      });
+    }
+  } catch (e) {
+    assertIsErrorLike(e);
+    await window.showErrorMessage(e.message);
+  }
+}
+
+async function showCloudwatchLogGroups(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
+  try {
+    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+      await pick({
+        ui: uiFactory.makePickUI(),
+        resourceType: 'log group',
+        region: 'ap-southeast-2',
+        loadResources: cloudwatch.getLogGroups,
         mru: makeMRU('table'),
         settings,
       });

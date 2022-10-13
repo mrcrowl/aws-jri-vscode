@@ -25,6 +25,7 @@
     "onCommand:jri.s3Buckets",
     "onCommand:jri.rdsDatabases",
     "onCommand:jri.cloudfrontDistributions",
+    "onCommand:jri.cloudwatchLogGroups",
     "onCommand:jri.lambdaFunctions",
     "onCommand:jri.cloudformationStacks",
     "onCommand:jri.ec2AutoScalingGroups",
@@ -69,6 +70,10 @@
         "title": "AWS: CloudFormation Stacks"
       },
       {
+        "command": "jri.cloudwatchLogGroups",
+        "title": "AWS: CloudWatch Log Groups"
+      },
+      {
         "command": "jri.ec2AutoScalingGroups",
         "title": "AWS: EC2 Auto Scaling Groups"
       },
@@ -105,6 +110,7 @@
     "@aws-sdk/client-auto-scaling": "3.178.0",
     "@aws-sdk/client-cloudformation": "3.178.0",
     "@aws-sdk/client-cloudfront": "3.178.0",
+    "@aws-sdk/client-cloudwatch-logs": "3.178.0",
     "@aws-sdk/client-dynamodb": "3.178.0",
     "@aws-sdk/client-ec2": "3.178.0",
     "@aws-sdk/client-ecs": "3.178.0",

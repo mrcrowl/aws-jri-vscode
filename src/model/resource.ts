@@ -14,6 +14,7 @@ export type ResourceType =
   | 'function'
   | 'hosted zone'
   | 'instance'
+  | 'log group'
   | 'parameter'
   | 'secret'
   | 'stack'
