@@ -19,6 +19,7 @@ import { IKeyValueStorage, ISettings, ITextMRU, IUIFactory } from './ui/interfac
 import { ensureMandatorySettings } from './ui/mandatory';
 import { pick } from './ui/pick';
 import { chooseProfile, IProfileUI } from './ui/profile';
+import { chooseRegion } from './ui/region';
 import { NodeFileSystem } from './vscode/NodeFileSystem';
 import { VSCodeContextStorage } from './vscode/VSCodeExtensionContext';
 import { VSCodeUI } from './vscode/VSCodeUI';
@@ -38,6 +39,7 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(
     commands.registerCommand('jri.switchProfile', () => switchProfile(uiFactory.makeProfileUI(), settings)),
+    commands.registerCommand('jri.switchRegion', () => switchRegion(mruFactory, uiFactory, settings)),
     commands.registerCommand('jri.route53HostedZones', () => showRoute53HostedZones(mruFactory, uiFactory, settings)),
     commands.registerCommand('jri.ecsClusters', () => showECSClusters(mruFactory, uiFactory, settings)),
     commands.registerCommand('jri.s3Buckets', () => showS3Buckets(mruFactory, uiFactory, settings)),
@@ -62,6 +64,13 @@ export function activate(context: ExtensionContext) {
 
 async function switchProfile(profileUI: IProfileUI, settings: ISettings) {
   await chooseProfile(profileUI, settings);
+}
+
+async function switchRegion(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
+  const region = await chooseRegion(makeMRU, uiFactory, settings);
+  if (region) {
+    await settings.setRegion(region);
+  }
 }
 
 async function showECSClusters(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {

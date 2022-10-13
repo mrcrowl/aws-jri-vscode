@@ -19,6 +19,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onCommand:jri.switchRegion",
     "onCommand:jri.switchProfile",
     "onCommand:jri.route53HostedZones",
     "onCommand:jri.ecsClusters",
@@ -37,6 +38,10 @@
   "main": "./dist/main.js",
   "contributes": {
     "commands": [
+      {
+        "command": "jri.switchRegion",
+        "title": "AWS: Switch region..."
+      },
       {
         "command": "jri.switchProfile",
         "title": "AWS: Switch profile..."

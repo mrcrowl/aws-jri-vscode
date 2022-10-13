@@ -63,6 +63,7 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
   const picker = ui.createQuickPick<VariousQuickPickItem>();
   picker.busy = true;
   picker.value = params.filterText ?? '';
+  picker.matchOnDescription = true;
 
   const clearButton = { iconPath: ui.clearIcon, tooltip: `Remove this ${resourceType} from recent list` };
 
@@ -100,9 +101,12 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
   }
 
   const disposables: Disposable[] = [];
-  const dispose = () => disposables.forEach(d => d.dispose());
+  const dispose = () => {
+    disposables.forEach(d => d.dispose());
+    picker.hide();
+  };
   const CREATE_ITEM: CreateResourceQuickPickItem = {
-    label: `$(plus) Create new ${resourceType} @${params.settings.profile}...`,
+    label: `$(plus) Create new ${resourceType} @${params.settings.profile} in ${params.settings.region}...`,
     variant: 'resource:create',
     alwaysShow: true,
   };
@@ -249,7 +253,7 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
     picker.onDidTriggerItemButton(onDidTriggerItemButton, undefined, disposables);
     picker.onDidChangeValue(onDidChangeValue, undefined, disposables);
     picker.show();
-    picker.placeholder = `Loading ${resourceType}s... (@${settings.profile})`;
+    picker.placeholder = `Loading ${resourceType}s... (@${settings.profile} in ${settings.region})`;
 
     const hooks = makeQuickPickAuthHooks(picker);
     const resources = await loadResources({
@@ -266,7 +270,7 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
       );
     }
     const plural = resources.length === 1 ? '' : 's';
-    picker.placeholder = `Found ${resources.length} ${resourceType}${plural} for @${settings.profile}`;
+    picker.placeholder = `Found ${resources.length} ${resourceType}${plural} for @${settings.profile} in ${settings.region}`;
     render(resources);
 
     if (resources.fromCache) {
