@@ -3,13 +3,13 @@ import { window } from 'vscode';
 import { MRUFactoryFn } from '../model/mru';
 import { assertIsErrorLike } from '../tools/error';
 import { ISettings, IUIFactory } from '../ui/interfaces';
+import { ensureMandatorySettings } from '../ui/mandatory';
 import { pick } from '../ui/pick';
-import { ensureProfile } from '../ui/profile';
 import { makeResourceLoader } from './common/loader';
 
 export async function showRoute53HostedZones(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory, settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'hosted zone',
