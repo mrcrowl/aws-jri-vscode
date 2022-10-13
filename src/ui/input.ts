@@ -73,7 +73,11 @@ export function input({
   });
 }
 
-export function validateJSON(value: string): string | undefined {
+export function validateJSONAndNotBlank(value: string): string | undefined {
+  if (value === '') {
+    return `Value cannot be empty`;
+  }
+
   if (value.trimStart().startsWith('{')) {
     try {
       JSON.parse(value);

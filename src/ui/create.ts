@@ -1,5 +1,5 @@
 import { assertIsErrorLike } from '../tools/error';
-import { input } from './input';
+import { input, validateJSONAndNotBlank } from './input';
 import { IUIFactory, MessageTypes } from './interfaces';
 import { IValueRepository, NameValueSecrecy } from './view-and-edit-menu';
 
@@ -172,7 +172,7 @@ async function inputValue(
     title: `Create new ${target}`,
     step: { step: 2, totalSteps: 2 },
     uiFactory: uiFactory,
-    validate: value => (value.trim() === '' ? `${target} value cannot be blank` : undefined),
+    validate: validateJSONAndNotBlank,
   });
 }
 

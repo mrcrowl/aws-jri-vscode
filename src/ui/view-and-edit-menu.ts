@@ -2,7 +2,7 @@ import type { Disposable, QuickPick, QuickPickItem } from 'vscode';
 import { Resource } from '../model/resource';
 import { toSentenceCase } from '../tools/case';
 import { assertIsErrorLike } from '../tools/error';
-import { input, validateJSON } from './input';
+import { input, validateJSONAndNotBlank } from './input';
 import { ISettings, IUIFactory, MessageTypes } from './interfaces';
 
 interface ActionItem extends QuickPickItem {
@@ -142,7 +142,7 @@ export async function showViewAndEditMenu({
       const editedValue = await input({
         initialValue: value,
         placeholder: toSentenceCase(`${kind} value`),
-        validate: validateJSON,
+        validate: validateJSONAndNotBlank,
         uiFactory,
       });
       if (!editedValue) return { finished: false }; // Cancelled?
