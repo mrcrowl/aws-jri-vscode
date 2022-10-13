@@ -1,78 +1,76 @@
-import { IResourceMRU } from '../ui/pick';
-import { ResourceType } from './resource';
-import { IKeyValueStorage } from '../ui/interfaces';
+import type { IKeyValueStorage, ITextMRU } from '../ui/interfaces';
 
-export type MRUFactoryFn = (type: ResourceType) => IResourceMRU;
+export type MRUFactoryFn = (key: string) => ITextMRU;
 
-export class MRU implements IResourceMRU {
-  #isRecentUrlCache: Set<string> | undefined;
+export class MRU implements ITextMRU {
+  #isRecentCache: Set<string> | undefined;
   #indexOfCache: Map<string, number> | undefined;
 
-  constructor(private readonly storage: IKeyValueStorage, private readonly resourceType: ResourceType) {}
+  constructor(private readonly storage: IKeyValueStorage, private readonly key: string) {}
 
   private get globalStateKey(): string {
-    return `recent_urls:${this.resourceType}`;
+    return `mru:${this.key}`;
   }
 
-  getRecentlySelectedUrls(): string[] {
-    const urls = this.storage.get(this.globalStateKey, []);
+  getRecentlySelected(): string[] {
+    const texts = this.storage.get(this.globalStateKey, []);
     const result: string[] = [];
-    for (const url of urls) {
-      if (typeof url === 'string') {
-        result.push(url);
+    for (const text of texts) {
+      if (typeof text === 'string') {
+        result.push(text);
       }
     }
     return result;
   }
 
-  async notifyUrlSelected(url: string): Promise<void> {
-    await this.replace(recentUrls => {
-      const indexOfUrl = recentUrls.indexOf(url);
-      if (indexOfUrl === -1) {
-        // New URL: insert at front of list.
-        return [url, ...recentUrls];
+  async notifySelected(text: string): Promise<void> {
+    await this.replace(recentTexts => {
+      const indexOfText = recentTexts.indexOf(text);
+      if (indexOfText === -1) {
+        // New text: insert at front of list.
+        return [text, ...recentTexts];
       }
 
-      // Existing URL: move to front of list.
-      recentUrls.splice(indexOfUrl, 1);
-      return [url, ...recentUrls];
+      // Existing text: move to front of list.
+      recentTexts.splice(indexOfText, 1);
+      return [text, ...recentTexts];
     });
   }
 
-  clearRecentUrl(urlToClear: string): Promise<void> {
-    return this.replace(urls => urls.filter(url => url !== urlToClear));
+  clearRecent(textToClear: string): Promise<void> {
+    return this.replace(texts => texts.filter(text => text !== textToClear));
   }
 
-  isRecentUrl(url: string): boolean {
-    if (!this.#isRecentUrlCache) {
-      const recentURLs = this.getRecentlySelectedUrls();
-      this.#isRecentUrlCache = new Set(recentURLs);
+  isRecent(text: string): boolean {
+    if (!this.#isRecentCache) {
+      const recentlySelected = this.getRecentlySelected();
+      this.#isRecentCache = new Set(recentlySelected);
     }
 
-    return this.#isRecentUrlCache.has(url);
+    return this.#isRecentCache.has(text);
   }
 
-  indexOf(url: string): number {
+  indexOf(text: string): number {
     if (!this.#indexOfCache) {
-      const urls = this.getRecentlySelectedUrls();
-      this.#indexOfCache = new Map(urls.map((url, i) => [url, i]));
+      const recentlySelected = this.getRecentlySelected();
+      this.#indexOfCache = new Map(recentlySelected.map((text, i) => [text, i]));
     }
 
-    return this.#indexOfCache.get(url) ?? -1;
+    return this.#indexOfCache.get(text) ?? -1;
   }
 
-  private async replace(generator: (recentUrls: string[]) => string[] | undefined) {
-    const previousRecentUrls = this.getRecentlySelectedUrls();
+  private async replace(generator: (recentlySelected: string[]) => string[] | undefined) {
+    const previouslyRecentlySelected = this.getRecentlySelected();
 
-    const nextRecentUrls = generator(previousRecentUrls);
-    if (nextRecentUrls) {
-      await this.storage.update(this.globalStateKey, nextRecentUrls.slice(0, 10));
+    const nextRecentlySelected = generator(previouslyRecentlySelected);
+    if (nextRecentlySelected) {
+      await this.storage.update(this.globalStateKey, nextRecentlySelected.slice(0, 10));
       this.invalidateCaches();
     }
   }
 
   private invalidateCaches() {
-    this.#isRecentUrlCache = undefined;
+    this.#isRecentCache = undefined;
     this.#indexOfCache = undefined;
   }
 }

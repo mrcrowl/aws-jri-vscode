@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { IKeyValueStorage } from '../ui/interfaces';
-import { IResourceMRU } from '../ui/pick';
+import { IKeyValueStorage, ITextMRU } from '../ui/interfaces';
 import { MRU } from './mru';
 
-const RECENT_URLS_KEY = 'recent_urls:bucket';
+const RECENT_URLS_KEY = 'mru:bucket';
 const AMAZON_URL = 'https://amazon.com';
 const APPLE_URL = 'https://apple.com';
 const GOOGLE_URL = 'https://google.com';
@@ -30,8 +29,8 @@ class InMemoryStorage implements IKeyValueStorage {
   }
 }
 
-describe('GlobalStateBackedMRU', () => {
-  let mru: IResourceMRU;
+describe('MRU', () => {
+  let mru: ITextMRU;
   let storage: IKeyValueStorage;
 
   beforeEach(async () => {
@@ -40,15 +39,15 @@ describe('GlobalStateBackedMRU', () => {
     mru = new MRU(storage, 'bucket');
   });
 
-  describe('getRecentlySelectedUrls', () => {
+  describe('getRecentlySelected', () => {
     it('returns empty array when no URLs stores', () => {
-      const urls = mru.getRecentlySelectedUrls(); // Act
+      const urls = mru.getRecentlySelected(); // Act
       expect(urls).toEqual([]); // Assert
     });
 
     it('returns array of URLs', async () => {
       await storage.update(RECENT_URLS_KEY, EXAMPLE_URLS); // Arrange
-      const urls = mru.getRecentlySelectedUrls(); // Act
+      const urls = mru.getRecentlySelected(); // Act
       expect(urls).toEqual(EXAMPLE_URLS); // Assert
     });
   });
@@ -57,60 +56,60 @@ describe('GlobalStateBackedMRU', () => {
     it('remains in a consistents state after multiple operaitons', async () => {
       // Arrange
       await storage.update(RECENT_URLS_KEY, EXAMPLE_URLS);
-      const urlsBefore = mru.getRecentlySelectedUrls();
+      const urlsBefore = mru.getRecentlySelected();
       expect(urlsBefore).toEqual(EXAMPLE_URLS);
 
       // Act.
-      await mru.notifyUrlSelected(META_URL);
-      await mru.notifyUrlSelected(GOOGLE_URL);
-      await mru.notifyUrlSelected(AMAZON_URL);
+      await mru.notifySelected(META_URL);
+      await mru.notifySelected(GOOGLE_URL);
+      await mru.notifySelected(AMAZON_URL);
       expect(mru.indexOf(META_URL)).toBe(2);
-      expect(mru.isRecentUrl(APPLE_URL)).toBe(true);
-      await mru.clearRecentUrl(APPLE_URL);
-      await mru.notifyUrlSelected(META_URL);
+      expect(mru.isRecent(APPLE_URL)).toBe(true);
+      await mru.clearRecent(APPLE_URL);
+      await mru.notifySelected(META_URL);
 
       // Assert.
-      expect(mru.getRecentlySelectedUrls()).toEqual([META_URL, AMAZON_URL, GOOGLE_URL]);
+      expect(mru.getRecentlySelected()).toEqual([META_URL, AMAZON_URL, GOOGLE_URL]);
       expect(mru.indexOf(META_URL)).toBe(0);
       expect(mru.indexOf(AMAZON_URL)).toBe(1);
       expect(mru.indexOf(GOOGLE_URL)).toBe(2);
       expect(mru.indexOf(APPLE_URL)).toBe(-1);
-      expect(mru.isRecentUrl(APPLE_URL)).toBe(false);
+      expect(mru.isRecent(APPLE_URL)).toBe(false);
     });
   });
 
-  describe('notifyUrlSelected', () => {
+  describe('notifySelected', () => {
     it('inserts a new URL at the front of the list', async () => {
       await storage.update(RECENT_URLS_KEY, EXAMPLE_URLS); // Arrange
-      await mru.notifyUrlSelected(META_URL); // Act
-      expect(mru.getRecentlySelectedUrls()).toEqual([META_URL, AMAZON_URL, APPLE_URL, GOOGLE_URL]); // Assert
+      await mru.notifySelected(META_URL); // Act
+      expect(mru.getRecentlySelected()).toEqual([META_URL, AMAZON_URL, APPLE_URL, GOOGLE_URL]); // Assert
     });
 
     it('moves an existing URL to the front of the list', async () => {
       await storage.update(RECENT_URLS_KEY, EXAMPLE_URLS); // Arrange
-      await mru.notifyUrlSelected(GOOGLE_URL); // Act
-      expect(mru.getRecentlySelectedUrls()).toEqual([GOOGLE_URL, AMAZON_URL, APPLE_URL]); // Assert
+      await mru.notifySelected(GOOGLE_URL); // Act
+      expect(mru.getRecentlySelected()).toEqual([GOOGLE_URL, AMAZON_URL, APPLE_URL]); // Assert
     });
   });
 
-  describe('clearRecentUrl', () => {
+  describe('clearRecent', () => {
     it('returns array of URLs', async () => {
       await storage.update(RECENT_URLS_KEY, EXAMPLE_URLS); // Arrange
-      await mru.clearRecentUrl(APPLE_URL); // Act
-      expect(mru.getRecentlySelectedUrls()).toEqual([AMAZON_URL, GOOGLE_URL]); // Assert
+      await mru.clearRecent(APPLE_URL); // Act
+      expect(mru.getRecentlySelected()).toEqual([AMAZON_URL, GOOGLE_URL]); // Assert
     });
   });
 
-  describe('isRecentUrl', () => {
+  describe('isRecent', () => {
     it('returns true if a URL is in the list', async () => {
       await storage.update(RECENT_URLS_KEY, EXAMPLE_URLS); // Arrange
-      const isRecent = mru.isRecentUrl(APPLE_URL); // Act
+      const isRecent = mru.isRecent(APPLE_URL); // Act
       expect(isRecent).toBe(true); // Assert
     });
 
     it('returns false if a URL is not in the list', async () => {
       await storage.update(RECENT_URLS_KEY, EXAMPLE_URLS); // Arrange
-      const isRecent = mru.isRecentUrl(META_URL); // Act
+      const isRecent = mru.isRecent(META_URL); // Act
       expect(isRecent).toBe(false); // Assert
     });
   });

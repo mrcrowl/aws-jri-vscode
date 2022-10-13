@@ -39,7 +39,7 @@ describe('pick', () => {
 
   it('basic selection', async () => {
     // Assert: "B" is not recent before.
-    expect(deps.mru.isRecentUrl(RESOURCE_B.url)).toBe(false);
+    expect(deps.mru.isRecent(RESOURCE_B.url)).toBe(false);
 
     // Act: Basic picker.
     const params = makeParams();
@@ -51,7 +51,7 @@ describe('pick', () => {
     await sleep(0);
 
     // Assert: "B" became a recent URL.
-    expect(deps.mru.isRecentUrl(RESOURCE_B.url)).toBe(true);
+    expect(deps.mru.isRecent(RESOURCE_B.url)).toBe(true);
 
     // Assert: result returns "B".
     const result = await promise;
@@ -68,7 +68,7 @@ describe('pick', () => {
   });
 
   it('sequences items by MRU', async () => {
-    await deps.mru.notifyUrlSelected(RESOURCE_C.url);
+    await deps.mru.notifySelected(RESOURCE_C.url);
 
     const params: PickParams = makeParams();
     void pick(params);

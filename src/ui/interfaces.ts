@@ -51,3 +51,20 @@ export interface FakeThemeIcon extends ThemeIcon {}
 export interface SeparatorItem extends QuickPickItem {
   variant: 'separator';
 }
+
+export interface ITextMRU {
+  /** Get recently selected strings. */
+  getRecentlySelected(): string[];
+
+  /** Register a string as having been selected. */
+  notifySelected(text: string): Promise<void>;
+
+  /** Clear a string as having been selected. */
+  clearRecent(text: string): Promise<void>;
+
+  /** Is string in recently selected set? */
+  isRecent(text: string): boolean;
+
+  /** Gets the index of the MRU string. */
+  indexOf(text: string): number;
+}

@@ -13,11 +13,10 @@ import * as s3 from './aws/s3';
 import * as secrets from './aws/secrets';
 import * as ssm from './aws/ssm';
 import { MRU, MRUFactoryFn } from './model/mru';
-import { ResourceType } from './model/resource';
 import { StoredSettings } from './model/settings';
 import { assertIsErrorLike } from './tools/error';
-import { IKeyValueStorage, ISettings, IUIFactory } from './ui/interfaces';
-import { IResourceMRU, pick } from './ui/pick';
+import { IKeyValueStorage, ISettings, ITextMRU, IUIFactory } from './ui/interfaces';
+import { pick } from './ui/pick';
 import { chooseProfile, ensureProfile, IProfileUI } from './ui/profile';
 import { NodeFileSystem } from './vscode/NodeFileSystem';
 import { VSCodeContextStorage } from './vscode/VSCodeExtensionContext';
@@ -26,7 +25,7 @@ import { VSCodeUI } from './vscode/VSCodeUI';
 export function activate(context: ExtensionContext) {
   const storage: IKeyValueStorage = new VSCodeContextStorage(context);
   const settings: ISettings = new StoredSettings(storage, new NodeFileSystem());
-  const mruFactory = (type: ResourceType): IResourceMRU => new MRU(storage, type);
+  const mruFactory = (key: string): ITextMRU => new MRU(storage, key);
   const makeUI = () => new VSCodeUI();
   const uiFactory: IUIFactory = {
     makeProfileUI: makeUI,
