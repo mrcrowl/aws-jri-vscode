@@ -7,6 +7,7 @@ import { createSecret } from '../ui/create';
 import { ISettings, IUIFactory } from '../ui/interfaces';
 import { ensureMandatorySettings } from '../ui/mandatory';
 import { pick } from '../ui/pick';
+import { DEFAULT_REGION } from '../ui/region';
 import {
   IValueRepository,
   NameValueSecrecy as NameValueSecrecyType,
@@ -25,7 +26,7 @@ export async function showSecrets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, 
       settings,
       loadResources: getSecrets,
       onSelected: (secret: Resource) => {
-        const repo = new SecretsManagerValueRepository(secret.name, 'ap-southeast-2');
+        const repo = new SecretsManagerValueRepository(secret.name, settings.region ?? DEFAULT_REGION);
 
         return showViewAndEditMenu({
           kind: 'secret',
@@ -36,7 +37,7 @@ export async function showSecrets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, 
         });
       },
       onUnmatched: async (text: string) => {
-        const repository = new SecretsManagerValueRepository(undefined, 'ap-southeast-2');
+        const repository = new SecretsManagerValueRepository(undefined, settings.region ?? DEFAULT_REGION);
 
         await createSecret({
           initialName: text,

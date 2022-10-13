@@ -231,18 +231,16 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
 
       const resourcesWithRecentFirst = [...recent.sort(sortByRecentOrder), ...rest];
 
-      if (picker.items.length > 0) {
-        const activeQPIs = picker.activeItems.filter(
-          item => item.variant === 'resource:select',
-        ) as SelectResourceQuickPickItem[];
-        const activeItemURLs = new Set(activeQPIs.map(item => item.url));
-        picker.keepScrollPosition = true;
-        picker.items = makeQuickPickItems(resourcesWithRecentFirst, recent.length);
-        if (activeItemURLs.size > 0) {
-          picker.activeItems = picker.items.filter(
-            item => item.variant === 'resource:select' && activeItemURLs.has(item.url),
-          );
-        }
+      const activeQPIs = picker.activeItems.filter(
+        item => item.variant === 'resource:select',
+      ) as SelectResourceQuickPickItem[];
+      const activeItemURLs = new Set(activeQPIs.map(item => item.url));
+      picker.keepScrollPosition = true;
+      picker.items = makeQuickPickItems(resourcesWithRecentFirst, recent.length);
+      if (activeItemURLs.size > 0) {
+        picker.activeItems = picker.items.filter(
+          item => item.variant === 'resource:select' && activeItemURLs.has(item.url),
+        );
       }
 
       lastResources = resourcesWithRecentFirst;
