@@ -3,6 +3,7 @@ import { window } from 'vscode';
 import { MRUFactoryFn } from '../model/mru';
 import { Resource } from '../model/resource';
 import { assertIsErrorLike } from '../tools/error';
+import { createSecret } from '../ui/create';
 import { ISettings, IUIFactory } from '../ui/interfaces';
 import { pick } from '../ui/pick';
 import { ensureProfile } from '../ui/profile';
@@ -34,6 +35,17 @@ export async function showSecrets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, 
           settings,
           uiFactory,
         });
+      },
+      onUnmatched: async (text: string) => {
+        const repository = new SecretsManagerValueRepository(undefined, 'ap-southeast-2');
+
+        await createSecret({
+          initialName: text,
+          uiFactory,
+          valueRepository: repository,
+        });
+
+        return { finished: true };
       },
     });
   } catch (e) {
@@ -67,13 +79,20 @@ const getSecrets = makeResourceLoader<secrets.SecretsManagerClient, secrets.Secr
 class SecretsManagerValueRepository implements IValueRepository {
   private readonly client: secrets.SecretsManagerClient;
 
-  constructor(private readonly id: string, readonly region: string) {
+  constructor(private readonly id: string | undefined, readonly region: string) {
     this.client = new secrets.SecretsManagerClient({ region });
   }
 
-  async createValue(_name: string, _value: string, _secrecy: NameValueSecrecyType): Promise<void> {
-    // const put = new secrets.PutSecretValueCommand({ SecretId: name, SecretString: value });
-    // await this.client.send(put);
+  async createValue(name: string, value: string, secrecy: NameValueSecrecyType): Promise<void> {
+    if (secrecy !== NameValueSecrecyType.secret) {
+      throw new Error('NameValueSecrecyType.notSecret is not supported by Secrets Manager');
+    }
+
+    const create = new secrets.CreateSecretCommand({
+      Name: name,
+      SecretString: value,
+    });
+    await this.client.send(create);
   }
 
   async retrieveValue(): Promise<string | undefined> {

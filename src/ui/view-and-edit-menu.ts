@@ -2,7 +2,7 @@ import type { Disposable, QuickPick, QuickPickItem } from 'vscode';
 import { Resource } from '../model/resource';
 import { toSentenceCase } from '../tools/case';
 import { assertIsErrorLike } from '../tools/error';
-import { input } from './input';
+import { input, validateJSON } from './input';
 import { ISettings, IUIFactory, MessageTypes } from './interfaces';
 
 interface ActionItem extends QuickPickItem {
@@ -173,17 +173,4 @@ export async function showViewAndEditMenu({
     await ui.openUrl(url);
     return { finished: true };
   }
-}
-
-function validateJSON(value: string): string | undefined {
-  if (value.trimStart().startsWith('{')) {
-    try {
-      JSON.parse(value);
-    } catch (e) {
-      assertIsErrorLike(e);
-      return `Invalid JSON: ${e.message}`;
-    }
-  }
-
-  return undefined;
 }

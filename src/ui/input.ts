@@ -1,4 +1,5 @@
 import type { Disposable, InputBox } from 'vscode';
+import { assertIsErrorLike } from '../tools/error';
 import { IUIFactory } from './interfaces';
 
 export interface IInputUI {
@@ -70,4 +71,17 @@ export function input({
       return numDisposables > 0;
     }
   });
+}
+
+export function validateJSON(value: string): string | undefined {
+  if (value.trimStart().startsWith('{')) {
+    try {
+      JSON.parse(value);
+    } catch (e) {
+      assertIsErrorLike(e);
+      return `Invalid JSON: ${e.message}`;
+    }
+  }
+
+  return undefined;
 }
