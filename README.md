@@ -21,9 +21,9 @@ The _Secrets_ & _SSM Parameters_ commands let you create, edit, view and copy ke
 | AWS: SSM Parameters | Create, Edit, View, Copy |
 | AWS: Secrets        | Create, Edit, View, Copy |
 
-### List & Jump Command
+### List & Jump Commands
 
-The remaining commands list resources in the selected region and profile. Selecting the resource jumps directly to the resource page in the [AWS Management Console](https://console.aws.amazon.com/).
+The remaining commands list resources in the selected region and profile. Selecting a resource jumps directly to the revelant management page in the [AWS Management Console](https://console.aws.amazon.com/).
 
 | Command                       |
 | ----------------------------- |
@@ -48,4 +48,4 @@ Resources are read from one region and AWS profile at a time. Switch profile or 
 | AWS: Switch profile... |
 | AWS: Switch region...  |
 
-✨ While viewing a list of resources you can type `@name` to quickly switch to a named profile.
+✨ While viewing a list of resources you can type `@name` to quickly switch to a named profile, e.g. If you have an AWS profile named `dev` type `@dev` to switch.
