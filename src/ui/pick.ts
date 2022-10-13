@@ -37,7 +37,7 @@ export type VariousQuickPickItem =
   | CreateResourceQuickPickItem;
 
 export interface ResourceLoadOptions {
-  region: string;
+  region?: string;
   profile?: string;
   loginHooks: IAuthHooks;
   settings: ISettings;
@@ -47,7 +47,6 @@ export interface ResourceLoadOptions {
 export type PickParams = {
   ui: IPickUI;
   resourceType: ResourceType;
-  region: string;
   settings: ISettings;
   mru: ITextMRU;
   filterText?: string;
@@ -59,7 +58,7 @@ export type PickParams = {
 export async function pick(params: PickParams): Promise<SelectResourceQuickPickItem | undefined> {
   const deferred = defer<SelectResourceQuickPickItem | undefined>();
 
-  const { ui, resourceType, region, loadResources, settings, mru, onSelected, onUnmatched } = params;
+  const { ui, resourceType, loadResources, settings, mru, onSelected, onUnmatched } = params;
 
   const picker = ui.createQuickPick<VariousQuickPickItem>();
   picker.busy = true;
@@ -255,7 +254,7 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
     const hooks = makeQuickPickAuthHooks(picker);
     const resources = await loadResources({
       loginHooks: hooks,
-      region: region,
+      region: settings.region,
       profile: settings.profile,
       skipCache: false,
       settings,
@@ -274,7 +273,7 @@ export async function pick(params: PickParams): Promise<SelectResourceQuickPickI
       // Reload the items without cache, in case anything has changed.
       const freshResources = await loadResources({
         loginHooks: hooks,
-        region: region,
+        region: settings.region,
         profile: settings.profile,
         skipCache: true,
         settings,

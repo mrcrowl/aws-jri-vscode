@@ -4,6 +4,7 @@ import { Disposable, FileSystemWatcher } from 'vscode';
 import { IFileSystem, IKeyValueStorage, ISettings } from '../ui/interfaces';
 
 export const PROFILE_KEY = 'profile';
+export const REGION_KEY = 'region';
 
 export class StoredSettings implements ISettings {
   #cachedProfileNames: Set<string> | undefined;
@@ -28,6 +29,14 @@ export class StoredSettings implements ISettings {
   async setProfile(profile: string): Promise<void> {
     await this.storage.update(PROFILE_KEY, profile);
     process.env.AWS_PROFILE = profile;
+  }
+
+  get region(): string | undefined {
+    return this.storage.get(REGION_KEY);
+  }
+
+  async setRegion(region: string): Promise<void> {
+    await this.storage.update(REGION_KEY, region);
   }
 
   /** Builds path to the `~/.aws/config` file. */

@@ -9,11 +9,10 @@ import { makeResourceLoader } from './common/loader';
 
 export async function showRoute53HostedZones(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureProfile(uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'hosted zone',
-        region: 'ap-southeast-2',
         loadResources: getHostedZones,
         mru: makeMRU('hosted zone'),
         settings,

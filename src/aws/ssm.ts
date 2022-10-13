@@ -6,25 +6,25 @@ import { Resource } from '../model/resource';
 import { assertIsErrorLike } from '../tools/error';
 import { createSSMParameter } from '../ui/create';
 import { ISettings, IUIFactory } from '../ui/interfaces';
+import { ensureMandatorySettings } from '../ui/mandatory';
 import { pick } from '../ui/pick';
-import { ensureProfile } from '../ui/profile';
+import { DEFAULT_REGION } from '../ui/region';
 import { IValueRepository, NameValueSecrecy, showViewAndEditMenu } from '../ui/view-and-edit-menu';
 import { makeResourceLoader } from './common/loader';
 
 export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
-  if (!(await ensureProfile(uiFactory.makeProfileUI(), settings))) return;
+  if (!(await ensureMandatorySettings(makeMRU, uiFactory, settings))) return;
 
   try {
     const ui = uiFactory.makePickUI();
     await pick({
       ui,
       resourceType: 'parameter',
-      region: 'ap-southeast-2',
       loadResources: getParameters,
       settings,
       mru: makeMRU('parameter'),
       onSelected: (parameter: Resource) => {
-        const repository = new ParameterStoreValueRepository(parameter.name, 'ap-southeast-2');
+        const repository = new ParameterStoreValueRepository(parameter.name, settings.region ?? DEFAULT_REGION);
 
         return showViewAndEditMenu({
           kind: 'parameter',
@@ -35,7 +35,7 @@ export async function showParameters(makeMRU: MRUFactoryFn, uiFactory: IUIFactor
         });
       },
       onUnmatched: async (text: string) => {
-        const repository = new ParameterStoreValueRepository(undefined, 'ap-southeast-2');
+        const repository = new ParameterStoreValueRepository(undefined, settings.region ?? DEFAULT_REGION);
 
         await createSSMParameter({
           initialName: text,

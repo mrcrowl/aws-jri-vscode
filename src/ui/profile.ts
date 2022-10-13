@@ -1,4 +1,4 @@
-import { ISettings } from './interfaces';
+import { ISettings, IUIFactory } from './interfaces';
 
 export interface IProfileUI {
   showNoConfigFoundError(configFilepath: string): Promise<void>;
@@ -7,7 +7,8 @@ export interface IProfileUI {
 }
 
 /** Prompt for profile if none selected. */
-export async function ensureProfile(ui: IProfileUI, settings: ISettings): Promise<boolean> {
+export async function ensureProfile(uiFactory: IUIFactory, settings: ISettings): Promise<boolean> {
+  const ui = uiFactory.makeProfileUI();
   const profile = settings.profile ?? (await chooseProfile(ui, settings));
   if (!profile) return false;
 

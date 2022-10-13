@@ -1,5 +1,6 @@
 import { Resource } from '../../model/resource';
 import { ResourceLoadOptions } from '../../ui/pick';
+import { DEFAULT_REGION } from '../../ui/region';
 import { runAWSCommandWithAuthentication } from './auth';
 import { ResourceCache } from './cache';
 
@@ -16,7 +17,7 @@ export interface ResourceLoaderDefinition<I, T> {
 export function makeResourceLoader<I, T>(definition: ResourceLoaderDefinition<I, T>): ResourceLoader {
   const cache = new ResourceCache();
   return async (options: ResourceLoadOptions) => {
-    const { region, skipCache } = options;
+    const { region = DEFAULT_REGION, skipCache } = options;
     if (!skipCache) {
       const cached = cache.get(region, process.env.AWS_PROFILE);
       if (cached) return cached;

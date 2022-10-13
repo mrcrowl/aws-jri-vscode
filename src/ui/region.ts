@@ -1,6 +1,11 @@
-import { ISettings } from './interfaces';
+import { MRUFactoryFn } from '../model/mru';
+import { Resource } from '../model/resource';
+import { ISettings, IUIFactory } from './interfaces';
+import { pick } from './pick';
 
 type Region = { id: string; name: string };
+
+export const DEFAULT_REGION = 'us-east-1';
 
 const REGIONS: Region[] = [
   { id: 'us-east-2', name: 'US East (Ohio)' },
@@ -28,41 +33,45 @@ const REGIONS: Region[] = [
   { id: 'sa-east-1', name: 'South America (São Paulo)' },
 ];
 
-export interface IProfileUI {
-  showNoConfigFoundError(configFilepath: string): Promise<void>;
-  showNoProfilesError(configFilepath: string): Promise<void>;
-  pickProfile(profiles: string[]): Promise<string | undefined>;
-}
+const REGION_RESOURCES: Resource[] = REGIONS.map(r => {
+  return {
+    name: r.id,
+    description: r.name,
+    url: `region://${r.name}`, // Must be set for picker.
+  };
+});
 
 /** Prompt for profile if none selected. */
-export async function ensureProfile(ui: IProfileUI, settings: ISettings): Promise<boolean> {
-  const profile = settings.profile ?? (await chooseProfile(ui, settings));
-  if (!profile) return false;
+export async function ensureRegion(
+  makeMRU: MRUFactoryFn,
+  uiFactory: IUIFactory,
+  settings: ISettings,
+): Promise<boolean> {
+  const region = settings.region ?? (await chooseRegion(makeMRU, uiFactory, settings));
+  if (!region) return false;
 
-  process.env.AWS_PROFILE = profile;
+  await settings.setRegion(region);
   return true;
 }
 
 /** Presents quick pick for choosing a profile. */
-export async function chooseProfile(ui: IProfileUI, settings: ISettings): Promise<string | undefined> {
-  const configFilepath = settings.configFilepath;
-  const profiles: string[] | undefined = settings.enumerateProfileNames();
-  if (!profiles) {
-    await ui.showNoConfigFoundError(configFilepath);
-    return undefined;
-  }
+export async function chooseRegion(
+  makeMRU: MRUFactoryFn,
+  uiFactory: IUIFactory,
+  settings: ISettings,
+): Promise<string | undefined> {
+  const ui = uiFactory.makePickUI();
 
-  if (profiles.length === 0) {
-    await ui.showNoProfilesError(configFilepath);
-    return undefined;
-  }
+  const regionQuickPickItem = await pick({
+    ui,
+    settings,
+    mru: makeMRU('resource'),
+    loadResources: async () => REGION_RESOURCES,
+    resourceType: 'region',
+    onSelected: async () => {
+      return { finished: true };
+    },
+  });
 
-  // Move selected to the top.
-  if (settings.profile && profiles.includes(settings.profile)) {
-    profiles.unshift(...profiles.splice(profiles.indexOf(settings.profile), 1));
-  }
-
-  const profile: string | undefined = await ui.pickProfile(profiles);
-  if (profile) await settings.setProfile(profile);
-  return profile;
+  return regionQuickPickItem?.resource?.name;
 }

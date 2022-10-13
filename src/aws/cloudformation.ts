@@ -1,12 +1,18 @@
 import * as cf from '@aws-sdk/client-cloudformation';
 import { Resource } from '../model/resource';
 import { ResourceLoadOptions } from '../ui/pick';
+import { DEFAULT_REGION } from '../ui/region';
 import { runAWSCommandWithAuthentication } from './common/auth';
 import { ResourceCache } from './common/cache';
 
 const cache = new ResourceCache();
 
-export async function getStacks({ region, loginHooks, skipCache, settings }: ResourceLoadOptions): Promise<Resource[]> {
+export async function getStacks({
+  region = DEFAULT_REGION,
+  loginHooks,
+  skipCache,
+  settings,
+}: ResourceLoadOptions): Promise<Resource[]> {
   if (!skipCache) {
     const cached = cache.get(region, process.env.AWS_PROFILE);
     if (cached) return cached;

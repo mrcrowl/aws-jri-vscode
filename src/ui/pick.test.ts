@@ -139,7 +139,6 @@ describe('pick', () => {
     const params: PickParams = {
       ui: instance(ui),
       resourceType: 'ASG',
-      region: 'ap-southeast-2',
       settings: deps.settings,
       mru: deps.mru,
       loadResources: mockLoadResourcesFn,

@@ -16,6 +16,7 @@ export type ResourceType =
   | 'instance'
   | 'log group'
   | 'parameter'
+  | 'region'
   | 'secret'
   | 'stack'
   | 'table';

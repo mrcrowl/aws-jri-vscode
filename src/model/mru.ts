@@ -1,6 +1,8 @@
 import type { IKeyValueStorage, ITextMRU } from '../ui/interfaces';
+import { ResourceType } from './resource';
 
-export type MRUFactoryFn = (key: string) => ITextMRU;
+export type MRUKeys = ResourceType | string;
+export type MRUFactoryFn = (key: MRUKeys) => ITextMRU;
 
 export class MRU implements ITextMRU {
   #isRecentCache: Set<string> | undefined;

@@ -8,6 +8,8 @@ export interface ISettings {
   /** Selected profile */
   readonly profile: string | undefined;
   setProfile(profile: string): Promise<void>;
+  readonly region: string | undefined;
+  setRegion(region: string): Promise<void>;
   readonly configFilepath: string;
   enumerateProfileNames(): string[] | undefined;
   isProfileName(name: string): boolean;

@@ -5,8 +5,8 @@ import { Resource } from '../model/resource';
 import { assertIsErrorLike } from '../tools/error';
 import { createSecret } from '../ui/create';
 import { ISettings, IUIFactory } from '../ui/interfaces';
+import { ensureMandatorySettings } from '../ui/mandatory';
 import { pick } from '../ui/pick';
-import { ensureProfile } from '../ui/profile';
 import {
   IValueRepository,
   NameValueSecrecy as NameValueSecrecyType,
@@ -15,13 +15,12 @@ import {
 import { makeResourceLoader } from './common/loader';
 
 export async function showSecrets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
-  if (!(await ensureProfile(uiFactory.makeProfileUI(), settings))) return;
+  if (!(await ensureMandatorySettings(makeMRU, uiFactory, settings))) return;
 
   try {
     await pick({
       ui: uiFactory.makePickUI(),
       resourceType: 'secret',
-      region: 'ap-southeast-2',
       mru: makeMRU('secret'),
       settings,
       loadResources: getSecrets,

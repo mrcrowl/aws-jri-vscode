@@ -12,12 +12,13 @@ import { showRoute53HostedZones } from './aws/route53';
 import * as s3 from './aws/s3';
 import * as secrets from './aws/secrets';
 import * as ssm from './aws/ssm';
-import { MRU, MRUFactoryFn } from './model/mru';
+import { MRU, MRUFactoryFn, MRUKeys } from './model/mru';
 import { StoredSettings } from './model/settings';
 import { assertIsErrorLike } from './tools/error';
 import { IKeyValueStorage, ISettings, ITextMRU, IUIFactory } from './ui/interfaces';
+import { ensureMandatorySettings } from './ui/mandatory';
 import { pick } from './ui/pick';
-import { chooseProfile, ensureProfile, IProfileUI } from './ui/profile';
+import { chooseProfile, IProfileUI } from './ui/profile';
 import { NodeFileSystem } from './vscode/NodeFileSystem';
 import { VSCodeContextStorage } from './vscode/VSCodeExtensionContext';
 import { VSCodeUI } from './vscode/VSCodeUI';
@@ -25,7 +26,7 @@ import { VSCodeUI } from './vscode/VSCodeUI';
 export function activate(context: ExtensionContext) {
   const storage: IKeyValueStorage = new VSCodeContextStorage(context);
   const settings: ISettings = new StoredSettings(storage, new NodeFileSystem());
-  const mruFactory = (key: string): ITextMRU => new MRU(storage, key);
+  const mruFactory = (key: MRUKeys): ITextMRU => new MRU(storage, key);
   const makeUI = () => new VSCodeUI();
   const uiFactory: IUIFactory = {
     makeProfileUI: makeUI,
@@ -65,11 +66,10 @@ async function switchProfile(profileUI: IProfileUI, settings: ISettings) {
 
 async function showECSClusters(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'cluster',
-        region: 'ap-southeast-2',
         loadResources: ecs.getClusters,
         mru: makeMRU('cluster'),
         settings,
@@ -83,11 +83,10 @@ async function showECSClusters(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, set
 
 async function showS3Buckets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'bucket',
-        region: 'ap-southeast-2',
         loadResources: s3.getBuckets,
         mru: makeMRU('bucket'),
         settings,
@@ -101,11 +100,10 @@ async function showS3Buckets(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, setti
 
 async function showLambdaFunctions(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'function',
-        region: 'ap-southeast-2',
         loadResources: lambda.getFunctions,
         mru: makeMRU('function'),
         settings,
@@ -119,11 +117,10 @@ async function showLambdaFunctions(makeMRU: MRUFactoryFn, uiFactory: IUIFactory,
 
 async function showRDSDatabases(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'database',
-        region: 'ap-southeast-2',
         loadResources: rds.getDatabases,
         mru: makeMRU('database'),
         settings,
@@ -137,11 +134,10 @@ async function showRDSDatabases(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, se
 
 async function showCloudFrontDistributions(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'distribution',
-        region: 'ap-southeast-2',
         loadResources: cloudfront.getDistributions,
         mru: makeMRU('distribution'),
         settings,
@@ -155,11 +151,10 @@ async function showCloudFrontDistributions(makeMRU: MRUFactoryFn, uiFactory: IUI
 
 async function showCloudFormationStacks(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'stack',
-        region: 'ap-southeast-2',
         loadResources: cloudformation.getStacks,
         mru: makeMRU('stack'),
         settings,
@@ -173,11 +168,10 @@ async function showCloudFormationStacks(makeMRU: MRUFactoryFn, uiFactory: IUIFac
 
 async function showEC2Instances(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'instance',
-        region: 'ap-southeast-2',
         loadResources: ec2.getInstances,
         mru: makeMRU('instance'),
         settings,
@@ -191,11 +185,10 @@ async function showEC2Instances(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, se
 
 async function showAutoscalingGroups(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'ASG',
-        region: 'ap-southeast-2',
         loadResources: autoscaling.getAutoScalingGroups,
         mru: makeMRU('ASG'),
         settings,
@@ -209,11 +202,10 @@ async function showAutoscalingGroups(makeMRU: MRUFactoryFn, uiFactory: IUIFactor
 
 async function showDynamoDBTables(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'table',
-        region: 'ap-southeast-2',
         loadResources: dynamodb.getTables,
         mru: makeMRU('table'),
         settings,
@@ -227,11 +219,10 @@ async function showDynamoDBTables(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, 
 
 async function showCloudwatchLogGroups(makeMRU: MRUFactoryFn, uiFactory: IUIFactory, settings: ISettings) {
   try {
-    if (await ensureProfile(uiFactory.makeProfileUI(), settings)) {
+    if (await ensureMandatorySettings(makeMRU, uiFactory, settings)) {
       await pick({
         ui: uiFactory.makePickUI(),
         resourceType: 'log group',
-        region: 'ap-southeast-2',
         loadResources: cloudwatch.getLogGroups,
         mru: makeMRU('table'),
         settings,
