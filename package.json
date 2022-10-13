@@ -1,9 +1,10 @@
 {
   "name": "aws-jri",
-  "displayName": "AWS Jump Right In",
+  "displayName": "Jump Right In: AWS",
   "publisher": "mrcrowl",
-  "description": "Jump right into the most common actions on AWS",
+  "description": "Jump into common AWS actions.",
   "version": "0.0.11",
+  "icon": "icon-round.png",
   "engines": {
     "vscode": "^1.58.0"
   },
