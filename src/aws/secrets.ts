@@ -67,10 +67,11 @@ const getSecrets = makeResourceLoader<secrets.SecretsManagerClient, secrets.Secr
   },
 
   map(secret: secrets.SecretListEntry, region: string) {
+    const escapedSecretName = encodeURIComponent(secret?.Name ?? '');
     return {
       name: secret.Name ?? 'Unknown',
       description: secret.Description ?? '',
-      url: `https://${region}.console.aws.amazon.com/secretsmanager/secret?name=${secret?.Name}&region=${region}`,
+      url: `https://${region}.console.aws.amazon.com/secretsmanager/secret?name=${escapedSecretName}&region=${region}`,
       arn: secret.ARN,
     };
   },
